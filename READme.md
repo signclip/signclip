@@ -2,6 +2,8 @@
 
 Stand 19. Oktober 2026. Zusammenstellung Konzeptidee und Design - Specialized Implementation a wide Interacting Design Idea.
 
+KontextParallelität von Gesten
+
 Implemented with Claude
 and Love
 mainly Claude :)
