@@ -1,6 +1,12 @@
 # SignClip: Anforderungen und Designkonzept
 
-Stand 19. Oktober 2026. Zusammenstellung Konzeptidee und Design
+Stand 19. Oktober 2026. Zusammenstellung Konzeptidee und Design - Specialized Implementation a wide Interacting Design Idea.
+
+Implemented with Claude
+and Love
+mainly Claude :)
+
+
 
 **Now**
 EINMALIG: Alle Dateien in einen Ordner auf ein statisches HTTPS-Hosting legen (GitHub Pages, Netlify oder Cloudflare Pages, kostenlos).
