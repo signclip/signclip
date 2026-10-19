@@ -434,7 +434,7 @@ inp.addEventListener('touchend',e=>{if(iy!=null&&e.changedTouches[0].clientY-iy>
 inp.onkeydown=e=>{if(e.key==='Enter'&&inp.value.trim()){const v=inp.value;inp.value='';$('#hist').style.display='none';voice(v)}};inp.oninput=()=>{$('#hist').style.display='none'};
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let sr=null,want=false;
 function listen(){if(!SR){if(!listen.w){listen.w=1;toast('Spracherkennung hier nicht unterstützt: Tastatur nutzen')}return}if(sr)return;want=true;sr=new SR();sr.lang='de-DE';sr.continuous=true;sr.interimResults=false;
- sr.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)voice(e.results[i][0].transcript,1)};
+ sr.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal){const t=e.results[i][0].transcript;if(tkAct())toast('„'+t.trim()+'“');voice(t,1)}};
  sr.onerror=e=>{if(/not-allowed|service/.test(e.error)){want=false;toast('Mikrofon/Sprache blockiert: '+e.error)}else if(!/no-speech|aborted/.test(e.error))toast('Sprache: '+e.error)};sr.onend=()=>{sr=null;if(want)setTimeout(listen,300)};try{sr.start()}catch(e){sr=null}}
 
 document.addEventListener('pointerdown',()=>{if(!sr&&!want&&SR)listen()},{once:true});
@@ -604,7 +604,7 @@ if(!ls.get('setup',0))setTimeout(firstRun,800);
 $('#dz').innerHTML=ic('delete',22);
 let talkEnd=0,tkTo='',tkClip=null,prevTalk=false,lastDir='',FACING='user';
 const tkAct=()=>talk||Date.now()-talkEnd<2500;
-setInterval(()=>{if(talk){tkTo=talkTo;tkClip=talkClip}if(prevTalk&&!talk){talkEnd=Date.now();try{if(sr)sr.stop()}catch(e){}}prevTalk=talk},60);
+setInterval(()=>{if(talk&&!sr&&SR){want=true;listen()}if(talk&&!SR&&!listen.w2){listen.w2=1;toast('Spracherkennung hier nicht verfügbar (z. B. Firefox oder iOS-Home-Screen-App): bitte tippen')}if(talk){tkTo=talkTo;tkClip=talkClip}if(prevTalk&&!talk){talkEnd=Date.now();try{if(sr)sr.stop()}catch(e){}}prevTalk=talk},60);
 async function switchCam(){if(rec)return toast('Nicht während der Aufnahme');FACING=FACING==='user'?'environment':'user';try{cam.srcObject&&cam.srcObject.getTracks().forEach(t=>t.stop())}catch(e){}camOK=false;cam.style.transform=FACING==='user'?'scaleX(-1)':'none';await initCam();toast(FACING==='user'?'Frontkamera':'Rückkamera')}
 const favOn=()=>new Set(favs.filter(f=>f.on).map(f=>f.t));
 const parseBr=t=>{const m=String(t).match(/^(.*?)\s*\[([^\]]*)\]\s*$/);return m?{pre:m[1].trim(),inner:m[2].split(/[\s,]+/).filter(Boolean)}:null};
