@@ -1,11 +1,21 @@
 # SignClip: Anforderungen und Designkonzept
 
-Stand 19. Oktober 2026. Zusammenstellung aller bisherigen Konzept-, Design- und Umsetzungswünsche. Status bezieht sich auf den Prototyp (nicht auf einem Gerät getestet): **umgesetzt**, **teilweise**, **offen**.
+Stand 19. Oktober 2026. Zusammenstellung Konzeptidee und Design
+
+**Now**
+EINMALIG: Alle Dateien in einen Ordner auf ein statisches HTTPS-Hosting legen (GitHub Pages, Netlify oder Cloudflare Pages, kostenlos).
+INSTALLIEREN: Adresse am Handy öffnen. 
+iPhone: Safari > Teilen > Zum Home-Bildschirm. 
+Android: Chrome > App installieren.
+DANACH: läuft offline, alle Daten bleiben auf dem Gerät. 
+UPDATE: index.html (und ggf. sw.js) ersetzen. Die App aktualisiert sich beim nächsten Start von selbst.
+ERWEITERN: In index.html die Tabelle ACT (Aktionen) und MAP (Gesten) ändern. Hilfe und Steuerungshinweise entstehen automatisch.
+SICHERUNG: Videos in der App Share > Teilen / Cloud / Ordner exportieren.
+
 
 ## 1. Ziel
 
-- Kurze Gebärdensprach-Videos im Selfie-Hochformat schnell aufnehmen, mit Kontext versehen, später über Kontext finden, schneiden, zusammenfügen und teilen.
-- Läuft lokal auf dem Gerät, ohne Server und ohne laufende Kosten. Installation einfach, Wartung einfach.
+- Kurze (Gebärdensprach-)Videos im Selfie-Hochformat schnell aufnehmen, mit Kontext versehen, später über Kontext finden, schneiden, zusammenfügen und teilen.
 - Bedienung ohne Buttons: Tippen, Halten, Wischen, Audio-Stichwörter, Videogesten und Wartezeiten.
 - Zwei Modi: **Aufnahme** (Korall) und **Suche** (Blau). Der Modus zeigt sich nur über den Pastellrand.
 
