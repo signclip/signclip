@@ -166,6 +166,10 @@ body.talking #stage{box-shadow:0 0 0 3px #5fbf92}.cf.talk{outline:2px solid #5fb
 #stage #mic::after{right:auto;left:50%;transform:translateX(-50%);text-align:center;top:22px}
 .es{position:absolute;top:70px;bottom:70px;width:20px;z-index:9;touch-action:none}#el{left:0}#er{right:0}
 .es::after{content:'';position:absolute;top:50%;width:4px;height:44px;border-radius:2px;background:var(--mut);opacity:.4;transform:translateY(-50%)}#el::after{left:6px}#er::after{right:6px}
+#app.search #bt{display:grid;grid-template-columns:var(--lw) 1fr;grid-template-areas:"x vw" "lg aw" "sw sw";gap:6px 0;align-items:end;padding:6px 12px 2px}
+#app.search #cf{display:contents}#app.search #vw{grid-area:vw;margin:0 0 0 4px!important}#app.search #lg{grid-area:lg;justify-self:start}#app.search #aw{grid-area:aw;margin-left:8px!important}#app.search #sw{grid-area:sw}
+#stage{background:transparent!important}#stage video{background:#000;border-radius:16px}#hn i{background:rgba(0,0,0,.5)!important}
+.it.draft{outline:1px dashed var(--mc)}
 </style></head><body>
 <div id="app"><header id="tb"><span id="ttl">SignClip <small>Steuerung<svg class="i" viewBox="0 0 24 24" width="14" height="14"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></small></span><span id="ml"></span><span id="mic"></span></header><div id="gt"></div><div id="fv"></div>
 <div id="stage"><video id="cam" muted playsinline></video><video id="pv" playsinline style="display:none"></video><div id="card"></div>
@@ -181,7 +185,7 @@ body.talking #stage{box-shadow:0 0 0 3px #5fbf92}.cf.talk{outline:2px solid #5fb
 <div id="hs" class="sheet"></div><div id="ss" class="sheet"></div>
 <div id="sh" class="sheet"><h2>Einstellungen</h2><p class="mut">Nach unten wischen zum Schließen</p>
 <h3>SPEICHERN</h3><button id="bDir">Ordner auf dem Gerät wählen</button><span id="dirN" class="mut"></span><br><button id="bLib">Weiteren Ordner einbinden (Bibliothek)</button>
-<input type="text" id="dUrl" placeholder="Nextcloud / Sciebo WebDAV-URL"><input type="text" id="dUser" placeholder="Benutzername"><input type="password" id="dPw" placeholder="App-Passwort (wird nicht gespeichert)">
+<input type="text" id="dUrl" placeholder="Nextcloud / Sciebo WebDAV-URL"><input type="text" id="dUser" placeholder="Benutzername"><input type="password" id="dPw" placeholder="App-Passwort (verschlüsselt auf dem Gerät)"><div id="davS" class="mut"></div><button id="bDav">Verbindung prüfen</button>
 <p class="mut">Sciebo: https://HOCHSCHULE.sciebo.de/remote.php/webdav/ · Nextcloud: https://HOST/remote.php/dav/files/BENUTZER/</p>
 <label><input type="checkbox" id="aSave" checked> Automatisch speichern</label>
 <h3>STEUERUNG</h3><label><input type="checkbox" id="auto"> Direct AudioContext: Sprache wird direkt zu Kontext</label>
@@ -255,15 +259,15 @@ const A=Object.fromEntries(ACT.map(a=>[a[0],a]));
 // Wisch-Belegung: Kontext → Richtung → [kurz, lang]
 const MAP={
  idle:{'tipp':['start'],'halten':['talk'],'doppelt':['kamera'],'Rand↓':['neu']},
- rec:{'tipp':['pause'],'halten':['talk'],'doppelt':['kamera'],'↓':['nochmal','nochmalNeu'],'Rand↓':['neu'],'↑':['stopp'],'←':['weiter'],'halten →':['teilen']},
- search:{'←':['schnitt'],'halten →':['teilen'],'↑':['weiter'],'↓':['zurueck'],'tipp':['playpause'],'halten':['talk'],'Rand↓':['neu']},
+ rec:{'tipp':['pause'],'halten':['talk'],'doppelt':['kamera'],'↓':['nochmal','nochmalNeu'],'Rand↓':['neu'],'↑':['stopp'],'←':['weiter'],'→':['teilen'],'halten →':['teilen']},
+ search:{'←':['schnitt'],'→':['teilen'],'halten →':['teilen'],'↑':['weiter'],'↓':['zurueck'],'tipp':['playpause'],'halten':['talk'],'Rand↓':['neu']},
  all:{'Rand↓':['neu']},
  strip:{'tippen/ziehen':['seek'],'halten':['vertikal']},
  dot:{'tippen':['einstellungen'],'halten':['autostart']},
  logo:{'←':['einstellungen'],'→':['teilen'],'↑':['kontextAlle'],'↓ (rote Zone)':['loeschen'],'halten':['talk']},
  item:{'→':['alsNaechstes'],'←':['entfernen'],'halten':['notiz'],'halten ↓ (rote Zone)':['loeschen']}};
 const CN={dot:'Grüner Punkt',logo:'Logo',strip:'Positionsleiste',idle:'Kontextphase',rec:'Aufnahme',search:'Suche',all:'Alle Clips',item:'Eintrag'};
-const runAct=(id,a)=>A[id]&&A[id][2](a);
+const runAct=(id,a)=>{if(mode==='rec'&&COMMIT[id]!==undefined)commitDrafts(COMMIT[id]);return A[id]&&A[id][2](a)};
 const CTX=()=>mode==='rec'?(rec?'rec':'idle'):(!pl.length&&!terms.length?'all':'search');
 function swAct(dx,dy,W,H){const ax=Math.abs(dx),ay=Math.abs(dy),h=ax>ay,a=h?ax:ay;if(a<40)return null;
  const full=a>(h?W:H)*.38,d=h?(dx<0?'←':'→'):(dy<0?'↑':'↓'),l=(MAP[CTX()]||{})[d]||[],id=l.length===1?l[0]:l[full?1:0];
@@ -310,7 +314,7 @@ function stop(){if(!rec)return;const r=rec;r.dur=rt();rec=null;rcStop();render()
 function fin(r,blob){if(blob&&!blob.size){toast('Aufnahme leer: Browser liefert keine Videodaten');blob=null}const url=blob?URL.createObjectURL(blob):null,cuts=[0,...r.sp,r.dur],from=clips.length;let n=0;
  for(let i=0;i<cuts.length-1;i++){const a=cuts[i],b=cuts[i+1];if(b-a<.5)continue;const ctx=r.ctx.filter(x=>x.t>=a&&x.t<b).map(x=>({t:x.t-a,x:x.x,m:x.m,g:x.g}));if(i>0)ctx.unshift(...r.pre.map(x=>({t:0,x:x.x,m:1,g:x.g})));
   clips.push({id:N++,title:ctx[0]?ctx[0].x.split(' ').slice(0,4).join(' '):'Clip '+N,date:Date.now(),s:a,dur:b-a,url,blob,hue:Math.random()*360|0,ctx,mk:r.mk.filter(m=>m>=a&&m<b).map(m=>m-a)});n++}
- toast(n+' Clip'+(n==1?'':'s')+' gespeichert');clips.slice(from).forEach(genThumb);flash('save');if($('#aSave').checked)saveAll(1);render();if(afterFin){const f=afterFin;afterFin=null;f(clips.slice(from))}}
+ toast(n+' Clip'+(n==1?'':'s')+' gespeichert');clips.slice(from).forEach(genThumb);if(r.draftMode){clips.slice(from).forEach(c=>c.draft=1);pending=r.pre.map(p=>({...p}));carryX=r.ctx.filter(x=>!x.m).map(x=>({...x,t:0}))}else flash('save');if($('#aSave').checked&&!r.draftMode)saveAll(1);render();if(afterFin){const f=afterFin;afterFin=null;f(clips.slice(from))}}
 function marker(){if(rec){rec.mk.push(Math.max(0,rt()-1));toast('Marker '+fmt(rt()))}else if(cur()&&playing){cur().mk.push(pos);toast('Marker '+fmt(pos));render()}}
 function schnitt(){if(rec){rec.sp.push(rt());toast('Schnitt '+fmt(rt()))}else if(cur()&&playing)splitAt(idx,pos)}
 function splitAt(i,p){const c=pl[i].c;if(p<.4||c.dur-p<.4)return toast('Zu nah am Rand');
@@ -365,15 +369,15 @@ async function merge(){if(busyT||pl.length<2)return toast('Mindestens 2 Clips n�
  const done=new Promise(r=>mr.onstop=r);mr.stop();await done;mv.remove();
  const blob=new Blob(ch,{type:mr.mimeType}),c0={id:N++,title:(terms.length?'Playlist '+terms.join(' '):'Zusammenschnitt '+list.length+' Clips'),merged:1,date:Date.now(),s:0,dur:tot,url:URL.createObjectURL(blob),blob,hue:210,ctx:[{t:0,x:list.map(c=>c.title).join(' → ')}],mk:[]};
  clips.push(c0);lastMerge=c0;busyT=null;pl=[{c:c0,why:new Set(['Zusammenschnitt'])}];idx=-1;play(0);toast('Zusammenschnitt fertig');if($('#aSave').checked)saveAll()}
-async function shareList(){if(pl.length>1&&!busyT){const b=lastMerge;await merge();if(lastMerge===b)return}openShare(pl.length===1?pl[0].c:lastMerge)}
+async function shareList(){if(pl.length>1&&!busyT){const b=lastMerge;await merge();if(lastMerge===b){openShare(pl[0]&&pl[0].c);return}}openShare(pl.length===1?pl[0].c:lastMerge)}
 // ================= SPEICHERN / TEILEN =================
 let dirH=null;
 async function putFile(name,blob){if(dirH){const f=await dirH.getFileHandle(name,{create:true}),w=await f.createWritable();await w.write(blob);await w.close()}
  const u=$('#dUrl').value.trim(),pw=$('#dPw').value;if(u&&pw){const r=await fetch(u.replace(/\/?$/,'/')+encodeURIComponent(name),{method:'PUT',headers:{Authorization:'Basic '+btoa($('#dUser').value+':'+pw)},body:blob});if(!r.ok)throw new Error('HTTP '+r.status)}}
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),1500)}
 async function saveAll(q){const web=$('#dUrl').value.trim()&&$('#dPw').value;
- if(!dirH&&!web){if(!q)return toast('Erst Ordner oder Cloud einrichten (Einstellungen)');let n='';for(const c of clips)if(c.blob&&!c.lib&&!c.blob.fid){c.blob.fid=fileName(c);dl(c.blob,c.blob.fid);n=c.blob.fid}if(n)toast('Download: '+n);return}
- try{let n='';for(const c of clips){if(c.blob&&!c.lib&&!c.blob.fid){const nm=fileName(c);await putFile(nm,c.blob);c.blob.fid=nm;n=nm}}
+ if(!dirH&&!web){if(!q)return toast('Erst Ordner oder Cloud einrichten (Einstellungen)');let n='';for(const c of clips)if(c.blob&&!c.lib&&!c.draft&&!c.blob.fid){c.blob.fid=fileName(c);dl(c.blob,c.blob.fid);n=c.blob.fid}if(n)toast('Download: '+n);return}
+ try{let n='';for(const c of clips){if(c.blob&&!c.lib&&!c.draft&&!c.blob.fid){const nm=fileName(c);await putFile(nm,c.blob);c.blob.fid=nm;n=nm}}
   await putFile('index.json',new Blob([JSON.stringify(clips.filter(c=>!c.lib).map(c=>({id:c.id,title:c.title,date:c.date,file:c.blob&&c.blob.fid,s:c.s,dur:c.dur,ctx:c.ctx,mk:c.mk})),null,1)],{type:'application/json'}));toast(n?'Gespeichert: '+n:'Gespeichert')}
  catch(e){toast('Speichern fehlgeschlagen: '+e.message)}}
 async function shareFile(c){const f=new File([c.blob],fileName(c),{type:c.blob.type});
@@ -462,8 +466,8 @@ function openPl(){setLw((lwi+1)%3)}
  dv.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;setLw($('#app').classList.contains('vfull')?(dx>30?0:-1):(Math.abs(dx)>30?(lwi===0&&dx<0?-1:lwi+(dx>0?1:-1)):(lwi+1)%3))})}
 // Lokaler Speicher (IndexedDB): Clips bleiben nach dem Schließen erhalten
 let db;const oi=indexedDB.open('signclip',1);oi.onupgradeneeded=()=>oi.result.createObjectStore('c',{keyPath:'id'});
-oi.onsuccess=()=>{db=oi.result;db.transaction('c').objectStore('c').getAll().onsuccess=e=>{e.target.result.forEach(r=>{if(r.id==='dirH'){dirH=r.h;return}if(r.id==='dirs'){libDirs=r.h||[];return}r.url=r.blob?URL.createObjectURL(r.blob):null;if(!clips.some(c=>c.id===r.id)){clips.push(r);N=Math.max(N,r.id+1)}});render()}};
-function persist(){if(!db)return;try{const s=db.transaction('c','readwrite').objectStore('c');clips.filter(c=>c.id>=10&&!c.lib).forEach(c=>{const{url,...x}=c;s.put(x)})}catch(e){}}
+oi.onsuccess=()=>{db=oi.result;db.transaction('c').objectStore('c').getAll().onsuccess=e=>{e.target.result.forEach(r=>{if(r.id==='dirH'){dirH=r.h;return}if(r.id==='dirs'){libDirs=r.h||[];return}if(r.id==='k'){dkey=r.key;return}r.url=r.blob?URL.createObjectURL(r.blob):null;if(!clips.some(c=>c.id===r.id)){clips.push(r);N=Math.max(N,r.id+1)}});render()}};
+function persist(){if(!db)return;try{const s=db.transaction('c','readwrite').objectStore('c');clips.filter(c=>c.id>=10&&!c.lib&&!c.draft).forEach(c=>{const{url,...x}=c;s.put(x)})}catch(e){}}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 let hs='';
@@ -621,11 +625,11 @@ setInterval(()=>{const t=daTarget();['mf','xf','vw','sw','aw','pp'].forEach(i=>{
 function saveSearch(){savedSearch={terms:[...terms],ids:pl.map(p=>p.c.id)}}
 function restoreSearch(){setMode('search');setLw(0);terms=[];pl=[];idx=-1;playing=false;pv.pause();letters.clear();const sv=savedSearch;
  if(sv&&sv.terms.length)sv.terms.forEach(t=>addTerm(t));else if(sv&&sv.ids.length){pl=sv.ids.map(id=>clips.find(c=>c.id===id)).filter(Boolean).map(c=>({c,why:new Set()}));if(pl.length)play(0);else render()}else render()}
-function openFs(c){if(!c)return toast('Noch kein Video');setMode('search');terms=[];pl=[{c,why:new Set()}];idx=-1;playing=false;play(0);setLw(-1)}
+function openFs(c){if(!c)return toast('Noch kein Video');if(c.draft)toast('Entwurf: wird erst bei Next, Another oder Share gespeichert');setMode('search');terms=[];pl=[{c,why:new Set()}];idx=-1;playing=false;play(0);setLw(-1)}
 function fsNow(){if(mode!=='search')return;if(cur()||pl.length){if(!cur())play(0);setLw(-1)}else openFs(clips[clips.length-1])}
 function toCap(){if(mode==='search'&&!$('#app').classList.contains('vfull'))saveSearch();setMode('rec')}
 const navState=()=>mode==='rec'?'cap':$('#app').classList.contains('vfull')?'fs':'list';
-function navNext(){const s=navState();if(s==='cap'){if(rec){afterFin=cl=>openFs(cl[cl.length-1]||clips[clips.length-1]);stop()}else openFs(clips[clips.length-1])}else if(s==='fs')restoreSearch();else toCap()}
+function navNext(){const s=navState();if(s==='cap'){if(rec){rec.draftMode=1;afterFin=cl=>openFs(cl[cl.length-1]||clips[clips.length-1]);stop()}else openFs(clips[clips.length-1])}else if(s==='fs')restoreSearch();else toCap()}
 function navPrev(){const s=navState();if(s==='cap')restoreSearch();else if(s==='list')fsNow();else toCap()}
 {const sw=(el,sg,fn)=>{let x=null;el.addEventListener('touchstart',e=>x=e.touches[0].clientX,{passive:true});el.addEventListener('touchend',e=>{if(x==null)return;const dx=e.changedTouches[0].clientX-x;x=null;if(sg*dx>50)fn()})};sw($('#el'),1,navNext);sw($('#er'),-1,navPrev)}
 function navHtml(){return'<h3>RÄNDER</h3><ul class="gl"><li>Linker Rand nach rechts: Aufnahme speichern, Video im Vollbild · nochmal: letzte Suche oder alle Videos · nochmal: zurück zur Aufnahme (Suche wird gemerkt)</li><li>Rechter Rand nach links: letzte Suche · nochmal: aktuelles Video im Vollbild · nochmal: Aufnahme</li><li>Obere Leiste nach unten: alles zurücksetzen (Aufnahme leer, Suche leer, Gesamtübersicht)</li><li>Punkt oben Mitte: Tippen = Settings, Halten = Direct AudioContext aus/an, Halten und auf ein Kontextfeld ziehen = Ziel mit grüner Umrandung</li></ul>'}
@@ -697,7 +701,7 @@ let fvM='';function renderFvOnce(){const k=mode+favs.length;if(k!==fvM){fvM=k;re
  ct.addEventListener('pointerdown',e=>{const b=e.target.closest('.pb');if(!b)return;e.stopPropagation();row=b.closest('[data-i]');s={i:+b.dataset.pi,x:e.clientX,y:e.clientY};arm=false;try{b.setPointerCapture(e.pointerId)}catch(z){}clearTimeout(t);t=setTimeout(()=>{arm=true;row&&row.classList.add('armed');navigator.vibrate&&navigator.vibrate(15)},400)});
  ct.addEventListener('pointermove',e=>{if(!s)return;const dx=e.clientX-s.x,dy=e.clientY-s.y;if(!arm){if(Math.abs(dx)>8||Math.abs(dy)>8)clearTimeout(t);return}if(row)row.style.transform=`translate(${dx}px,${dy}px)`});
  ct.addEventListener('pointerup',e=>{clearTimeout(t);if(!s)return;const dx=e.clientX-s.x,dy=e.clientY-s.y,i=s.i;s=null;if(row){row.style.transform='';row.classList.remove('armed')}
-  if(!arm){if(Math.abs(dx)<10&&Math.abs(dy)<10)play(i);return}
+  if(!arm){if(Math.abs(dx)<10&&Math.abs(dy)<10)play(i);else if(dx>50&&Math.abs(dy)<Math.abs(dx))openShare(pl[i].c);else if(dx<-50&&Math.abs(dy)<Math.abs(dx))plRm(i);return}
   if(dx>80)openShare(pl[i].c);else if(dx<-80)plRm(i);else if(Math.abs(dy)>20){const rs=[...ct.querySelectorAll('[data-i]')];let j=rs.findIndex(r=>{const b=r.getBoundingClientRect();return e.clientY<b.top+b.height/2});if(j<0)j=rs.length-1;if(j!==i){const cu=cur(),it=pl.splice(i,1)[0];pl.splice(j,0,it);idx=cu?pl.findIndex(p=>p.c===cu):-1;render()}}});
  ct.addEventListener('click',e=>{if(e.target.closest('.pb'))e.stopPropagation()},true)}
 let awItems=[];
@@ -719,5 +723,46 @@ setInterval(()=>{const a=$('#app'),t=$('#trk');if(mode==='search'&&a.classList.c
 let awT=null;
 function showAw(x,m){$('#aw .cc').innerHTML=`<span class="ch ${m==='all'?'hit':'on'}">${esc(x)}</span>`;$('#aw').style.display='flex';clearTimeout(awT);awT=setTimeout(()=>{$('#aw').style.display='none'},4000)}
 document.addEventListener('pointerdown',e=>{if(document.querySelector('.sheet.on')&&!e.target.closest('.sheet'))closeSheets()},true);
+const COMMIT={stopp:1,weiter:1,teilen:1,nochmal:0,nochmalNeu:0,neu:0};
+function commitDrafts(save){if(!clips.some(c=>c.draft))return;if(save){clips.forEach(c=>{if(c.draft)c.draft=0});saveAll(1)}else{clips=clips.filter(c=>!c.draft);pl=pl.filter(p=>!p.c.draft);render()}}
+// Video immer im Seitenverhältnis, mittig, Freiraum außen
+function fitVideo(){const st=$('#stage'),W=st.clientWidth,H=st.clientHeight;[cam,pv].forEach(v=>{const a=v.videoWidth,b=v.videoHeight;if(!a||!b||!W||!H){v.style.width='';v.style.height='';v.style.left='';v.style.top='';return}const r=a/b,w=Math.min(W,H*r),h=w/r;v.style.width=w+'px';v.style.height=h+'px';v.style.left=(W-w)/2+'px';v.style.top=(H-h)/2+'px'})}
+try{new ResizeObserver(fitVideo).observe($('#stage'))}catch(e){}
+['loadedmetadata','resize','playing'].forEach(ev=>{cam.addEventListener(ev,fitVideo);pv.addEventListener(ev,fitVideo)});addEventListener('resize',fitVideo);setInterval(fitVideo,1500);
+// WebDAV: Passwort verschlüsselt (WebCrypto, nicht auslesbarer Schlüssel), Prüfung, Abgleich
+let dkey=null,davS='';
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))),ub64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+async function getKey(){if(dkey)return dkey;dkey=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);try{db.transaction('c','readwrite').objectStore('c').put({id:'k',key:dkey})}catch(e){}return dkey}
+async function encPw(pw){const k=await getKey(),iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(pw));return b64(iv)+'.'+b64(ct)}
+async function decPw(t){const[i,c]=t.split('.');return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:ub64(i)},await getKey(),ub64(c)))}
+const davAuth=()=>({Authorization:'Basic '+btoa(unescape(encodeURIComponent($('#dUser').value+':'+$('#dPw').value)))});
+const davBase=()=>$('#dUrl').value.trim().replace(/\/?$/,'/');
+const davReq=(m,u,o={})=>fetch(u,{method:m,headers:{...davAuth(),...(o.h||{})},body:o.body});
+function setDav(t,q){davS=t;const e=$('#davS');if(e)e.textContent=t||'';if(t&&t!=='Verbunden'&&!q)toast(t)}
+async function davCheck(q){if(!$('#dUrl').value.trim()||!$('#dPw').value){setDav('',q);return false}
+ try{const r=await davReq('PROPFIND',davBase(),{h:{Depth:'0'}});
+  if(r.status===401||r.status===403){setDav('Anmeldung abgelehnt: Benutzer und App-Passwort prüfen',q);return false}
+  if(r.status===404){setDav('Ordner nicht gefunden: Adresse prüfen',q);return false}
+  if(r.status===207||r.ok){setDav('Verbunden',q);davSync();return true}setDav('Fehler HTTP '+r.status,q);return false}
+ catch(e){setDav('Keine Verbindung: Netz oder CORS (der Server muss diese App-Adresse erlauben)',q);return false}}
+async function davSync(){if(davSync.b)return;davSync.b=1;try{const u=davBase(),r=await davReq('PROPFIND',u,{h:{Depth:'1'},body:'<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:getlastmodified/><d:getcontentlength/><d:getetag/><d:resourcetype/></d:prop></d:propfind>'});
+  const doc=new DOMParser().parseFromString(await r.text(),'application/xml'),rs=[...doc.getElementsByTagNameNS('DAV:','response')],base=new URL(u),abs=h=>new URL(h,base).href,nm=h=>decodeURIComponent(h.split('/').filter(Boolean).pop()||'');
+  const files=rs.map(x=>{const g=t=>{const e=x.getElementsByTagNameNS('DAV:',t)[0];return e?e.textContent:''};return{href:g('href'),mod:g('getlastmodified'),etag:g('getetag'),dir:!!x.getElementsByTagNameNS('DAV:','collection').length}}).filter(f=>!f.dir);
+  const ix={},ixf=files.find(f=>nm(f.href)==='index.json');if(ixf){try{JSON.parse(await(await davReq('GET',abs(ixf.href))).text()).forEach(q=>{if(q.file)(ix[q.file]=ix[q.file]||[]).push(q)})}catch(e){}}
+  let add=0,chg=0;const vids=files.filter(f=>/\.(mp4|webm|mov|m4v)$/i.test(nm(f.href)));
+  vids.forEach(f=>{const n=nm(f.href);if(clips.some(c=>!c.remote&&c.blob&&c.blob.fid===n))return;
+   (ix[n]||[null]).forEach((q,k)=>{const key='dav:'+n+'#'+k,ex=clips.find(c=>c.src===key);
+    if(ex){if(ex.etag!==f.etag){ex.etag=f.etag;ex.url=null;ex.blob=null;ex.th=null;chg++}if(q){ex.ctx=q.ctx;ex.title=q.title}return}
+    const t=n.replace(/\.[^.]+$/,'').replace(/_\d{8}-\d{4}.*$/,'').replace(/[_-]+/g,' ');
+    clips.push({id:N++,lib:1,remote:1,src:key,href:abs(f.href),etag:f.etag,title:q?q.title:t,date:q?q.date:Date.parse(f.mod)||Date.now(),dur:q?q.dur:5,s:q?q.s||0:0,hue:Math.random()*360|0,ctx:q?q.ctx:[{t:0,m:1,x:t}],mk:q?q.mk||[]:[]});add++})});
+  const keep=new Set(vids.map(f=>'dav:'+nm(f.href)));const before=clips.length;clips=clips.filter(c=>!c.remote||keep.has(c.src.split('#')[0]));const del=before-clips.length;
+  if(add||chg||del){render();toast('Cloud: '+add+' neu, '+chg+' geändert, '+del+' entfernt')}}catch(e){}davSync.b=0}
+async function davFetch(c){const r=await davReq('GET',c.href);if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.blob();c.blob=b;c.url=URL.createObjectURL(b)}
+{const _p=play;play=function(i,off){const c=pl[i]&&pl[i].c;if(c&&c.remote&&!c.url){toast('Lade aus der Cloud …');davFetch(c).then(()=>_p(i,off)).catch(e=>toast('Laden fehlgeschlagen: '+e.message));return}return _p(i,off)}}
+async function davBoot(){for(let i=0;i<40&&!db;i++)await new Promise(r=>setTimeout(r,200));const e=ls.get('dpw','');if(e){try{$('#dPw').value=await decPw(e)}catch(x){}}davCheck(true)}
+['dUrl','dUser'].forEach(id=>$('#'+id).addEventListener('change',()=>{ls.set('cfg',{u:$('#dUrl').value,n:$('#dUser').value,f:$('#frz').value});davCheck()}));
+$('#dPw').addEventListener('change',async()=>{const v=$('#dPw').value;ls.set('dpw',v?await encPw(v):'');davCheck()});
+$('#bDav').onclick=()=>davCheck();
+setTimeout(davBoot,800);setInterval(()=>davCheck(true),300000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)davCheck(true)});
 setLw(0);setMode('rec');initCam();listen();
 </script></body></html>
