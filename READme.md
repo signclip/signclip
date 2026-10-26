@@ -49,7 +49,7 @@ SICHERUNG: Videos in der App Share > Teilen / Cloud / Ordner exportieren.
 4. **Kamera und Ton** müssen zuverlässig starten: Zugriff beim ersten Antippen und bei jeder Rückkehr zur App, Rückfall auf Aufnahme ohne Ton mit Meldung. Stand: teilweise (auf iOS im Browser begrenzt).
 5. **Spracherkennung auf iOS** pausiert während der Videoaufnahme (Mikrofon-Konflikt). Kontext wird dort während der Aufnahme per Tastatur eingegeben. Stand: umgesetzt als Umgehung.
 6. **Videoformat:** MP4, wenn der Browser es kann, sonst WebM. Stand: umgesetzt.
-7. **Seitenverhältnis:** Die Kamera wird mittig auf das gewählte Verhältnis zugeschnitten (kurze Seite 480/720/1080). Die Vorschau zeigt denselben Ausschnitt. Stand: umgesetzt, auf dem Gerät zu prüfen.
+7. **Seitenverhältnis:** Die Kamera liefert ihr volles Bildfeld (kein Zuschnitt durch den Browser). Daraus wird der größtmögliche Ausschnitt im gewählten Verhältnis genommen und höchstens verkleinert, nie vergrößert (kurze Seite bis 480/720/1080). Die Vorschau zeigt denselben Ausschnitt. Breite Formate bei hochkant gehaltenem Gerät (und umgekehrt) schneiden zwangsläufig viel ab; die App weist darauf hin. Stand: umgesetzt, auf dem Gerät zu prüfen.
 8. **Daten bleiben lokal** (IndexedDB, gewählter Ordner). Stand: umgesetzt.
 
 ## 4. Eingabekanäle

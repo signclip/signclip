@@ -321,7 +321,7 @@ function addCtx(x){(rec?rec.ctx:pending).push(rec?{t:rt(),x}:{t:0,x,m:1});if(!re
 function start(){if(rec||busyT)return;if(IOS&&sr){wantBak=true;want=false;try{sr.stop()}catch(e){}}setMode('rec');rec={t0:performance.now(),ctx:[...pending.map(p=>({...p})),...carryX],pre:pending.map(p=>({...p})),pt:0,paused:false,ps:0,mk:[],sp:[],ch:[],mr:null};pending=[];carryX=[];
  if(!camOK)toast('Keine Kamera: Zugriff erlauben (Aufnahme ohne Video)');
  else if(!window.MediaRecorder)toast('Dieser Browser kann nicht aufnehmen (MediaRecorder fehlt)');
- else{let mr=null,err='';for(const src of[()=>recSource(),()=>cam.srcObject]){try{const d=arDims()||[cam.videoWidth||720,cam.videoHeight||1280];rec.w=d[0];rec.h=d[1];mr=new MediaRecorder(src(),MIME?{mimeType:MIME,videoBitsPerSecond:Math.round(2500000*d[0]*d[1]/921600)}:undefined);break}catch(e){err=e.message;rcStop()}}
+ else{let mr=null,err='';for(const src of[()=>recSource(),()=>cam.srcObject]){try{const so=src(),d=so!==cam.srcObject&&recDims?recDims:[cam.videoWidth||720,cam.videoHeight||1280];rec.w=d[0];rec.h=d[1];mr=new MediaRecorder(so,MIME?{mimeType:MIME,videoBitsPerSecond:Math.round(2500000*d[0]*d[1]/921600)}:undefined);break}catch(e){err=e.message;rcStop()}}
   if(mr){const R=rec;mr.ondataavailable=e=>{if(e.data.size)R.ch.push(e.data)};mr.onerror=()=>toast('Aufnahmefehler');try{mr.start(250);rec.mr=mr}catch(e){toast('Aufnahme startet nicht: '+e.message)}}else toast('Aufnahme nicht möglich: '+err)}
  moved=false;still=0;render()}
 function stop(){if(!rec)return;const r=rec;r.dur=rt();rec=null;rcStop();render();if(IOS&&wantBak){wantBak=false;setTimeout(listen,600)}
@@ -435,7 +435,7 @@ function closeSheets(){if($('#sh').classList.contains('on'))ls.set('cfg',{...ls.
 const mc=document.createElement('canvas');mc.width=24;mc.height=18;const mx=mc.getContext('2d',{willReadFrequently:true});
 let camOK=false,prev=null,mot=0,still=0,moved=false,act=0,cool=0,cys=[];
 async function initCam(){if(camOK&&cam.srcObject&&cam.srcObject.getTracks().every(t=>t.readyState==='live'))return;
- const d=arDims(),land=d&&d[0]>d[1],v={facingMode:FACING,width:{ideal:land?1280:720},height:{ideal:land?720:1280},aspectRatio:{ideal:land?16/9:0.5625}},a={echoCancellation:true,noiseSuppression:true};
+ const v={facingMode:FACING,width:{ideal:1920},height:{ideal:1920},resizeMode:'none'},a={echoCancellation:true,noiseSuppression:true};
  try{let st;try{st=await navigator.mediaDevices.getUserMedia({video:v,audio:a})}catch(e){st=await navigator.mediaDevices.getUserMedia({video:v});toast('Mikro nicht verfügbar: Aufnahme ohne Ton')}
   cam.srcObject=st;cam.setAttribute('playsinline','');await cam.play();camOK=true}catch(e){camOK=false;toast('Kamera blockiert: Zugriff erlauben, dann antippen')}}
 setInterval(()=>{if(!camOK||cam.readyState<2)return;mx.drawImage(cam,0,0,24,18);const d=mx.getImageData(0,0,24,18).data;let n=0,sy=0;const g=[];
@@ -677,10 +677,14 @@ IC.check='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';IC.add='M19 13h-6v6
 IC.folder_shared='M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-5 3c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm4 8h-8v-1c0-1.33 2.67-2 4-2s4 .67 4 2v1z';
 IC.create_new_folder='M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z';
 let rcT=null,talkSpoke=false,armStart=0,resume=null,favs=ls.get('favs',[]),stash=null;const PREF=ls.get('pref',{});
-function recSource(){const v=cam,st=v.srcObject,d=arDims(),vw=v.videoWidth,vh=v.videoHeight;if(!d||!vw||!vh)return st;
- if(Math.abs(vw/vh-d[0]/d[1])<.01&&Math.abs(vw-d[0])<16)return st;
- const c=document.createElement('canvas');c.width=d[0];c.height=d[1];const g=c.getContext('2d');
- const draw=()=>{const vw=v.videoWidth,vh=v.videoHeight;if(!vw)return;const k=Math.max(d[0]/vw,d[1]/vh),w=vw*k,h=vh*k;g.drawImage(v,(d[0]-w)/2,(d[1]-h)/2,w,h)};draw();rcT=setInterval(draw,33);
+// Größter Ausschnitt im Zielverhältnis aus dem vollen Kamerabild, nie hochskaliert (sonst wirkt es gezoomt/unscharf)
+function cropBox(vw,vh){const d=arDims();if(!d||!vw||!vh)return null;const r=d[0]/d[1];let sw=vw,sh=vh;if(vw/vh>r)sw=vh*r;else sh=vw/r;
+ const k=Math.min(1,Math.min(d[0],d[1])/Math.min(sw,sh)),e=x=>Math.max(2,Math.round(x/2)*2);return{sx:(vw-sw)/2,sy:(vh-sh)/2,sw,sh,w:e(sw*k),h:e(sh*k),keep:sw*sh/(vw*vh)}}
+let recDims=null;
+function recSource(){const v=cam,st=v.srcObject,vw=v.videoWidth,vh=v.videoHeight,b=cropBox(vw,vh);recDims=b?[b.w,b.h]:[vw,vh];
+ if(!b||(b.w===vw&&b.h===vh))return st;
+ const c=document.createElement('canvas');c.width=b.w;c.height=b.h;const g=c.getContext('2d');
+ const draw=()=>{const x=cropBox(v.videoWidth,v.videoHeight);if(x)g.drawImage(v,x.sx,x.sy,x.sw,x.sh,0,0,b.w,b.h)};draw();rcT=setInterval(draw,33);
  const o=c.captureStream(30);st.getAudioTracks().forEach(t=>o.addTrack(t));return o}
 // Seitenverhältnis der Aufnahme: '9:16' … '16:9' oder 'orig' (Kamera unverändert)
 const ARS=[['9:16','Hoch'],['3:4','Hoch'],['4:5','Hoch'],['1:1','Quadrat'],['4:3','Quer'],['16:9','Quer'],['orig','Kamera']];
@@ -688,8 +692,8 @@ let AR=ls.get('ar','9:16'),ARQ=+ls.get('arq',720);
 function arDims(){if(AR==='orig')return null;const[a,b]=AR.split(':').map(Number),q=ARQ,e=x=>Math.round(x/2)*2;return a<=b?[q,e(q*b/a)]:[e(q*a/b),q]}
 function setAR(x){x=String(x).toLowerCase().trim();const W={hoch:'9:16',hochformat:'9:16',quadrat:'1:1',quadratisch:'1:1',quer:'16:9',querformat:'16:9',original:'orig',kamera:'orig'};
  const v=W[x]||x.replace(/\s*(zu|:|x|auf)\s*/,':').replace(/\s+/g,'');if(!ARS.some(a=>a[0]===v))return toast('Unbekanntes Format: '+x);
- const land=a=>a!=='orig'&&+a.split(':')[0]>+a.split(':')[1],re=land(v)!==land(AR);AR=v;ls.set('ar',AR);renderAR();fitVideo();ui();toast('Format '+(v==='orig'?'Kamera':v));
- if(re&&!rec){try{cam.srcObject&&cam.srcObject.getTracks().forEach(t=>t.stop())}catch(e){}camOK=false;initCam()}}
+ const land=a=>a!=='orig'&&+a.split(':')[0]>+a.split(':')[1];AR=v;ls.set('ar',AR);renderAR();fitVideo();ui();toast('Format '+(v==='orig'?'Kamera':v));
+ const cb=cropBox(cam.videoWidth,cam.videoHeight);if(cb&&cb.keep<.5)setTimeout(()=>toast('Format '+v+': nur '+Math.round(cb.keep*100)+' % des Kamerabilds · Gerät '+(land(v)?'quer':'hochkant')+' halten'),1900)}
 function renderAR(){const el=$('#arSel');if(!el)return;el.innerHTML=ARS.map(([k,l])=>{const[a,b]=k==='orig'?[3,4]:k.split(':').map(Number),z=18/Math.max(a,b);return`<span class="${k===AR?'on':''}" data-ar="${k}"><i style="width:${Math.round(a*z)}px;height:${Math.round(b*z)}px${k==='orig'?';border-style:dashed':''}"></i>${k==='orig'?l:k}</span>`}).join('');$('#arQ').value=ARQ}
 function rcStop(){clearInterval(rcT);rcT=null}
 function fileName(c){const cl=s=>s.replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'').slice(0,40),d=new Date(c.date||Date.now()),p=n=>String(n).padStart(2,'0'),ds=d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes());
