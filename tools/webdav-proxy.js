@@ -5,12 +5,15 @@
 // Dieser Worker steht dazwischen und ergänzt die CORS-Antwort. Die App-Version mit
 // Capacitor (native App) braucht ihn nicht.
 //
+// Ausführliche Anleitung: docs/WORKER.md
+//
 // Einrichten:
 //   1. dash.cloudflare.com › Workers › Create › diesen Code einfügen › Deploy
 //   2. Settings › Variables:
 //        ALLOW_HOSTS  = hochschule.sciebo.de,cloud.example.org   (nur diese Server)
 //        ALLOW_ORIGIN = https://signclip.github.io                (Adresse der App)
-//   3. In SignClip › Einstellungen › Speicherort › Erweitert: https://NAME.workers.dev/
+//   3. In SignClip: storage.js › DEFAULT_PROXY = 'https://NAME.workers.dev/' (für alle)
+//      oder Speicherort 2× tippen › Proxy bei CORS-Fehler (nur dieser Ort)
 //
 // Sicherheit: Anmeldedaten laufen durch den Worker (nur im eigenen Cloudflare-Konto).
 // Ohne ALLOW_HOSTS lehnt der Worker alles ab, er ist also kein offener Proxy.

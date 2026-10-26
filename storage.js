@@ -19,6 +19,9 @@
 //   clips, N, render, toast, esc, ic, fileName, encPw, decPw, db, genThumb
 // =====================================================================
 const Store = (() => {
+  // Feste Worker-Adresse für alle (siehe docs/WORKER.md). Leer = kein Proxy.
+  // Ein Proxy, der beim Speicherort eingetragen ist, hat Vorrang.
+  const DEFAULT_PROXY = '';
   const LS = {
     get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch (e) { return d } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} }
@@ -90,7 +93,8 @@ const Store = (() => {
 
   function req(t, method, url, o = {}) {
     const headers = { Authorization: 'Basic ' + b64u(davUser(t) + ':' + (PW[t.id] || '')), ...(o.h || {}) };
-    const target = t.proxy ? t.proxy.trim() + (t.proxy.includes('?') ? '&' : '?') + 'url=' + encodeURIComponent(url) : url;
+    const px = (t.proxy || DEFAULT_PROXY).trim(), local = /^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(url);
+    const target = px && !local ? px + (px.includes('?') ? '&' : '?') + 'url=' + encodeURIComponent(url) : url;
     return fetch(target, { method, headers, body: o.body, cache: 'no-store' });
   }
   const httpErr = s => s === 401 ? 'Anmeldung abgelehnt' : s === 403 ? 'Kein Schreibrecht' : s === 404 ? 'Ordner nicht gefunden'
@@ -115,7 +119,7 @@ const Store = (() => {
       if (r.status === 404) { status(t, 'Ordner nicht gefunden: Adresse prüfen', quiet); return false }
       status(t, 'Fehler ' + httpErr(r.status), quiet); return false;
     } catch (e) {
-      status(t, 'Keine Verbindung: Netz oder CORS' + (t.proxy ? ' – Proxy prüfen' : ' – Server erlaubt diese App-Adresse nicht, Proxy eintragen'), quiet);
+      status(t, 'Keine Verbindung: Netz oder CORS' + ((t.proxy || DEFAULT_PROXY) ? ' – Proxy prüfen' : ' – Server erlaubt diese App-Adresse nicht, Proxy eintragen'), quiet);
       return false;
     }
   }
