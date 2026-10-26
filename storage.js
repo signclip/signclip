@@ -308,11 +308,16 @@ const Store = (() => {
     T = list().filter(x => x.id !== id); save(); delete UP[id]; upSave(); idbDel(id);
     const m = LS.get('tpw', {}); delete m[id]; LS.set('tpw', m); unscan(t); renderSettings();
   }
-  function toggle(id, k) {
-    const t = get(id); if (!t) return; t[k] = !t[k]; save();
-    if (k === 'lib') t.lib ? scan(t) : unscan(t);
-    if (k === 'auto' && t.auto) flush(1);
-    renderSettings();
+  // Modus wechseln: auto = immer speichern (umrandet), sonst im Teilen-Menü
+  async function setAuto(t, on) {
+    t.auto = on; save(); renderSettings();
+    if (on) { status(t, 'Prüfe …', 1); if (await check(t)) { scan(t); flush(0) } }
+    else toast(t.name + ': im Teilen-Menü');
+  }
+  async function repick(t) {
+    if (!window.showDirectoryPicker) return;
+    let h; try { h = await showDirectoryPicker({ mode: 'readwrite' }) } catch (e) { return }
+    unscan(t); H[t.id] = h; idbPut(t.id, h); t.name = h.name; save(); status(t, 'Bereit', 1); scan(t);
   }
 
   // ---------- Start ----------
@@ -346,55 +351,92 @@ const Store = (() => {
   }
   async function refresh() { for (const t of list()) if (t.kind !== 'dir' && await check(t, true)) scan(t); flush(2) }
 
-  // ---------- Einstellungen (Abschnitt SPEICHERORTE) ----------
-  let form = null; // {kind, id?}
+  // ---------- Einstellungen (Abschnitt SPEICHERORTE), nur Gesten ----------
+  // Karte:  ↓ entfernen · ↑ ins Teilen-Menü · ← prüfen + immer speichern · 2× tippen ändern
+  // Umrandet = jede Aufnahme wird hier gespeichert. Ohne Rand = erscheint im Teilen-Menü.
+  // Einziger Knopf "Neuer Speicherort": → Cloud oder Freigabe-Link, weit → Ordner auf dem Gerät
+  // Formular:  ← speichern und prüfen (oder Enter) · ↓ abbrechen
+  let form = null; // {id?}
   const icon = t => t.kind === 'dir' ? 'folder' : t.kind === 'share' ? 'folder_shared' : 'cloud';
   const short = t => t.kind === 'dir' ? 'Gerät' : t.kind === 'share' ? (parseShare(t.url) || { base: t.url }).base.replace(/^https?:\/\//, '') : String(t.url || '').replace(/^https?:\/\//, '').replace(/\/remote\.php\/(dav\/files|webdav)\//, ' › ');
+  const arr = h => typeof ar === 'function' ? ar(h) : h;
   function renderSettings() {
     const el = document.getElementById('stor'); if (!el) return;
-    const rows = list().map(t => `<div class="tg-row" data-t="${t.id}">
-      <div class="tg-h"><span>${ic(icon(t), 20)}</span><b>${esc(t.name)}</b><small>${esc(KIND[t.kind])} · ${esc(short(t))}</small></div>
-      <div class="tg-s ${/^(Verbunden|Bereit)/.test(ST[t.id] || '') ? 'ok' : ''}">${esc(ST[t.id] || (booted ? 'Nicht geprüft' : 'Lädt …'))}</div>
-      <div class="tg-o"><label><input type="checkbox" data-a="auto" ${t.auto ? 'checked' : ''}> Jede Aufnahme hier speichern</label>
-      <label><input type="checkbox" data-a="lib" ${t.lib ? 'checked' : ''}> Videos in der Bibliothek zeigen</label>
-      <span class="tg-b"><button data-a="check">Prüfen</button>${t.kind === 'dir' ? '' : '<button data-a="edit">Ändern</button>'}<button data-a="del">Entfernen</button></span></div></div>`).join('');
-    const f = form, v = f && f.id ? get(f.id) || {} : {};
-    const fm = !f ? '' : `<div class="tg-f">
-      <b>${f.id ? 'Speicherort ändern' : f.kind === 'share' ? 'Freigegebenen Ordner hinzufügen' : 'Nextcloud / Sciebo hinzufügen'}</b>
-      <input type="text" id="tName" placeholder="Name, z. B. ${f.kind === 'share' ? 'DGS-Gruppe' : 'Sciebo'}" value="${esc(v.name || '')}">
-      <input type="text" id="tUrl" inputmode="url" placeholder="${f.kind === 'share' ? 'Freigabe-Link: https://HOCHSCHULE.sciebo.de/s/CODE' : 'WebDAV-Adresse (siehe unten)'}" value="${esc(v.url || '')}">
-      ${f.kind === 'dav' ? `<input type="text" id="tUser" autocomplete="username" placeholder="Benutzername" value="${esc(v.user || '')}">` : ''}
-      <input type="password" id="tPw" autocomplete="new-password" placeholder="${f.kind === 'share' ? 'Freigabe-Passwort (falls gesetzt)' : 'App-Passwort'}${f.id ? ' – leer = unverändert' : ''}">
-      <details><summary>Erweitert: Proxy bei CORS-Fehler</summary><input type="text" id="tProxy" placeholder="https://dein-proxy.workers.dev/" value="${esc(v.proxy || '')}"><small class="mut">Nur nötig, wenn der Server diese App-Adresse nicht erlaubt. Vorlage: tools/webdav-proxy.js</small></details>
-      <small class="mut">${f.kind === 'share' ? 'In Sciebo/Nextcloud: Ordner › Teilen › Link kopieren. Für Hochladen muss die Freigabe Bearbeiten oder Hochladen erlauben.' : 'Sciebo: https://HOCHSCHULE.sciebo.de/remote.php/webdav/ORDNER/ · Nextcloud: https://HOST/remote.php/dav/files/BENUTZER/ORDNER/ · App-Passwort unter Einstellungen › Sicherheit erzeugen.'}</small>
-      <span class="tg-b"><button data-a="save" class="pri">Speichern und prüfen</button><button data-a="cancel">Abbrechen</button></span></div>`;
-    el.innerHTML = rows + fm + (f ? '' : `<div class="tg-add"><button data-a="add-dir">${ic('folder', 16)} Ordner auf dem Gerät</button><button data-a="add-dav">${ic('cloud', 16)} Nextcloud / Sciebo</button><button data-a="add-share">${ic('folder_shared', 16)} Freigabe-Link</button></div>`)
-      + (list().length ? '' : '<p class="mut">Noch kein Speicherort: Aufnahmen bleiben nur in der App.</p>');
+    const rows = list().map(t => `<div class="tg-row${t.auto ? ' auto' : ''}" data-t="${t.id}">
+      <div class="tg-h"><span>${ic(icon(t), 20)}</span><b>${esc(t.name)}</b><em>${t.auto ? 'Immer speichern' : 'Im Teilen-Menü'}</em><small>${esc(KIND[t.kind])} · ${esc(short(t))}</small></div>
+      <div class="tg-s ${/^(Verbunden|Bereit)/.test(ST[t.id] || '') ? 'ok' : ''}">${esc(ST[t.id] || (booted ? 'Nicht geprüft' : 'Lädt …'))}</div></div>`).join('');
+    const v = form && form.id ? get(form.id) || {} : {};
+    const fm = !form ? '' : `<div class="tg-row tg-f" data-f="1">
+      <b>${form.id ? 'Speicherort ändern' : 'Neuer Speicherort'}</b>
+      <input type="text" id="tUrl" inputmode="url" placeholder="Freigabe-Link …/s/CODE oder WebDAV-Adresse" value="${esc(v.url || '')}">
+      <input type="text" id="tUser" autocomplete="username" placeholder="Benutzer (nicht bei Freigabe-Link)" value="${esc(v.user || '')}">
+      <input type="password" id="tPw" autocomplete="new-password" placeholder="${form.id ? 'Passwort – leer = unverändert' : 'App-Passwort oder Freigabe-Passwort'}">
+      <input type="text" id="tName" placeholder="Name, z. B. DGS-Gruppe" value="${esc(v.name || '')}">
+      <details><summary>Proxy bei CORS-Fehler</summary><input type="text" id="tProxy" placeholder="https://dein-proxy.workers.dev/" value="${esc(v.proxy || '')}"><small class="mut">Vorlage: tools/webdav-proxy.js</small></details>
+      <small class="mut">Sciebo-Link: Ordner › Teilen › Link kopieren · Konto: https://HOCHSCHULE.sciebo.de/remote.php/webdav/ORDNER/</small>
+      <small class="tg-g">${arr('← Speichern und prüfen · ↓ Abbrechen')}</small></div>`;
+    el.innerHTML = rows + fm
+      + (form ? '' : `<div class="tg-new" data-n="1">${ic('add', 18)}<b>Neuer Speicherort</b><small>${arr('→ Cloud / Link' + (window.showDirectoryPicker ? ' · weit → Ordner' : ''))}</small></div>`)
+      + `<p class="tg-g">${list().length ? arr('↓ Entfernen · ↑ Teilen-Menü · ← Prüfen + immer speichern · 2× Ändern') : 'Noch kein Speicherort: Aufnahmen bleiben nur in der App.'}</p>`;
   }
-  async function onClick(e) {
-    const b = e.target.closest('[data-a]'); if (!b) return;
-    const a = b.dataset.a, row = b.closest('[data-t]'), id = row && row.dataset.t;
-    if (a === 'auto' || a === 'lib') { toggle(id, a); return }
-    if (a === 'check') { const t = get(id); if (t && await check(t)) scan(t); return }
-    if (a === 'del') { const t = get(id); if (t && confirm('„' + t.name + '“ entfernen? Die Dateien dort bleiben erhalten.')) remove(id); return }
-    if (a === 'edit') { const t = get(id); form = { kind: t.kind, id }; renderSettings(); return }
-    if (a === 'add-dir') { await addDir({ auto: true }); renderSettings(); return }
-    if (a === 'add-dav' || a === 'add-share') { form = { kind: a.slice(4) }; renderSettings(); document.getElementById('tUrl')?.focus(); return }
-    if (a === 'cancel') { form = null; renderSettings(); return }
-    if (a === 'save') {
-      const val = id2 => (document.getElementById(id2) || {}).value || '';
-      const d = { id: form.id, kind: form.kind, name: val('tName').trim(), url: val('tUrl').trim(), user: val('tUser').trim(), proxy: val('tProxy').trim() };
-      if (d.kind === 'share' && !parseShare(d.url)) { toast('Link nicht erkannt: erwartet …/s/CODE'); return }
-      if (d.kind === 'dav' && !/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)[:/])/.test(d.url)) { toast('Adresse muss mit https:// beginnen'); return }
-      const pw = val('tPw'); form = null;
-      await upsert(d, pw || (d.id ? null : ''));
+  async function saveForm() {
+    const val = i => ((document.getElementById(i) || {}).value || '').trim();
+    const url = val('tUrl'), kind = parseShare(url) ? 'share' : 'dav';
+    if (kind === 'dav' && !/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)[:/])/.test(url)) { toast('Adresse: Freigabe-Link …/s/CODE oder https://…'); return }
+    const d = { id: form.id, kind, url, name: val('tName'), user: kind === 'dav' ? val('tUser') : '', proxy: val('tProxy') };
+    const pw = (document.getElementById('tPw') || {}).value || ''; form = null; renderSettings();
+    await upsert(d, pw || (d.id ? null : ''));
+  }
+  function label(r, dx, dy, W) {
+    const ax = Math.abs(dx), ay = Math.abs(dy); if (Math.max(ax, ay) < 40) return '';
+    if (r.dataset.n) return dx > 40 && ax > ay ? (dx > W * .45 && window.showDirectoryPicker ? 'Ordner auf dem Gerät' : 'Cloud / Freigabe-Link') : '';
+    if (r.dataset.f) return ay > ax ? (dy > 0 ? 'Abbrechen' : '') : dx < 0 ? 'Speichern und prüfen' : '';
+    return ay > ax ? (dy > 0 ? 'Entfernen' : 'Ins Teilen-Menü') : dx < 0 ? 'Prüfen + immer speichern' : '';
+  }
+  let lastTap = { id: '', t: 0 };
+  async function act(r, dx, dy, W) {
+    const ax = Math.abs(dx), ay = Math.abs(dy), tap = ax < 10 && ay < 10, what = label(r, dx, dy, W);
+    if (r.dataset.n) {
+      if (what === 'Ordner auf dem Gerät') { await addDir({ auto: true }); renderSettings() }
+      else if (what) { form = {}; renderSettings(); document.getElementById('tUrl')?.focus() }
+      else if (tap) toast('Nach rechts ziehen: Cloud oder Link' + (window.showDirectoryPicker ? ' · weit: Ordner' : ''));
+      return;
     }
+    if (r.dataset.f) { if (what === 'Abbrechen') { form = null; renderSettings() } else if (what) saveForm(); return }
+    const t = get(r.dataset.t); if (!t) return;
+    if (tap) {
+      if (lastTap.id === t.id && Date.now() - lastTap.t < 350) { lastTap = { id: '', t: 0 }; if (t.kind === 'dir') repick(t); else { form = { id: t.id }; renderSettings() } }
+      else lastTap = { id: t.id, t: Date.now() };
+      return;
+    }
+    if (what === 'Entfernen') { remove(t.id); toast(t.name + ' entfernt · Dateien dort bleiben') }
+    else if (what === 'Ins Teilen-Menü') setAuto(t, false);
+    else if (what) setAuto(t, true);
   }
-  function openForm(kind) { form = { kind }; renderSettings() }
+  function bind(el) {
+    let s = null;
+    const end = e => {
+      if (!s) return; const { r, dx, dy } = s; s = null;
+      r.classList.remove('drag'); r.style.transform = ''; delete r.dataset.g;
+      if (e.type === 'pointerup') act(r, dx, dy, el.clientWidth);
+    };
+    el.addEventListener('pointerdown', e => {
+      if (e.target.closest('input,select,details')) return;
+      const r = e.target.closest('.tg-row,.tg-new'); if (!r) return;
+      s = { r, x: e.clientX, y: e.clientY, dx: 0, dy: 0 }; try { r.setPointerCapture(e.pointerId) } catch (x) {}
+    });
+    el.addEventListener('pointermove', e => {
+      if (!s) return; s.dx = e.clientX - s.x; s.dy = e.clientY - s.y;
+      if (Math.hypot(s.dx, s.dy) > 8) { s.r.classList.add('drag'); s.r.style.transform = `translate(${s.dx}px,${s.dy}px)`; const g = label(s.r, s.dx, s.dy, el.clientWidth); g ? s.r.dataset.g = g : delete s.r.dataset.g }
+    });
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' && form && e.target.closest('.tg-f')) { e.preventDefault(); saveForm() } });
+  }
+  function openForm(kind) { if (kind === 'dir') { addDir({ auto: true }); return } form = {}; renderSettings() }
 
   return {
     all: list, get, idb, boot, perm, refresh, flush, saveClip, putExtra, addDir, fetchClip, isSaved,
-    renderSettings, onClick, openForm, kindLabel: t => KIND[t.kind], icon, parseShare, check, scan,
+    renderSettings, bind, openForm, kindLabel: t => KIND[t.kind], icon, parseShare, check, scan,
     hasAuto: () => list().some(t => t.auto)
   };
 })();

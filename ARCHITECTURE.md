@@ -39,8 +39,8 @@ Die App ist eine PWA ohne Build-Schritt. Bis auf `storage.js` steckt alles in **
 ## Speicher (storage.js) – was jetzt gilt
 
 - Beliebig viele **Speicherorte**: Ordner auf dem Gerät, Nextcloud/Sciebo-Konto, freigegebener Ordner per Link (`…/s/CODE`).
-- Pro Ort: **Jede Aufnahme hier speichern** (auto) und **In der Bibliothek zeigen** (lib).
-- Im **Teilen-Menü** erscheint jeder Ort als Kachel; Sprache: Namen des Orts sagen.
+- Bedienung nur mit Gesten auf der Karte: ↓ entfernen · ↑ ins Teilen-Menü · ← prüfen + immer speichern · 2× tippen ändern. **Umrandet** = jede Aufnahme wird dort gespeichert; ohne Rand erscheint der Ort im Teilen-Menü. Einziger Knopf „Neuer Speicherort“: → Cloud/Link, weit → Ordner. Art (Konto oder Freigabe) wird an der Adresse erkannt.
+- Im **Teilen-Menü** erscheinen die Orte ohne Rand als Kachel; Sprache: Namen des Orts sagen.
 - Pro Video wird `<video>.json` daneben geschrieben (Kontext, Marker, Schnitte, Größe). Kein Überschreiben einer gemeinsamen `index.json` mehr – mehrere Personen können in denselben Ordner schreiben. Alte `index.json` wird weiter gelesen.
 - Kontext-Änderungen nach dem Speichern werden erkannt (Signatur) und nur die `.json` neu geschrieben, das Video nicht.
 - Fehlgeschlagenes Speichern bleibt offen und wird wiederholt (alle 5 Minuten, bei `online`, nach Änderungen).

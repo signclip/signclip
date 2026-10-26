@@ -5,7 +5,9 @@ DANACH: läuft offline, alle Daten bleiben auf dem Gerät. Kein Server, kein Kon
 UPDATE: index.html (und ggf. sw.js) ersetzen. Die App aktualisiert sich beim nächsten Start von selbst.
 ERWEITERN: In index.html die Tabelle ACT (Aktionen) und MAP (Gesten) ändern. Hilfe und Steuerungshinweise entstehen automatisch.
 SPEICHERORTE: Grüner Punkt > Speicherorte. Beliebig viele: Ordner auf dem Gerät, Nextcloud/Sciebo-Konto, freigegebener Ordner (Link).
-  Pro Ort: "Jede Aufnahme hier speichern" und "Videos in der Bibliothek zeigen". Im Teilen-Menü ist jeder Ort eine Kachel.
+  Bedienung nur mit Gesten: Karte nach unten = entfernen, nach oben = ins Teilen-Menü, nach links = prüfen + immer speichern,
+  2x tippen = ändern. Umrandet = jede Aufnahme wird dort gespeichert, sonst erscheint der Ort im Teilen-Menü.
+  "Neuer Speicherort" nach rechts ziehen = Cloud oder Freigabe-Link, weit nach rechts = Ordner auf dem Gerät.
   Neben jedem Video liegt VIDEONAME.json mit Kontext, Marker und Schnitten.
 FORMAT: Grüner Punkt > Aufnahme: 9:16, 3:4, 4:5, 1:1, 4:3, 16:9 oder Kamera. Sprache: "Format quadrat", "Format 3 zu 4".
 
