@@ -125,6 +125,9 @@ Ziel: gemeinsamer Kontext wird nur einmal geschrieben. Statt einer Trennlinie gi
 
 - Obere Randleiste, Video (Hochformat, Original), unten das Hauptkontext-Fenster, darüber das Kontext-Fenster (erscheint beim Start der Aufnahme), untere Randleiste.
 - Kein Button unten, kein Logo. Grüner Punkt oben rechts. Recording-Sekunden nur um den Play-Button (kleine Pille darunter), keine Aufnahmeanzeige oben links.
+- Kamera zeigt das ganze Bild (unten bündig), ein **Fokusrahmen** markiert den Ausschnitt des gewählten Formats, außen abgedunkelt.
+- Der **Play-Button** sitzt zwischen Aufnahmefeld und Kontextfeld: ragt leicht ins Aufnahmefeld und berührt leicht das Kontextfeld. Gesten (Tippen, Halten, Wischen) gehen vom Button aus.
+- Im Streifen dazwischen, links vom Button: die **Serie** (Clips mit demselben Hauptkontext, neuester am Button, Entwürfe gestrichelt). Antippen spielt den Clip im Vollbild.
 - Rund um die Mitte stehen die Richtungen mit Pfeil und Beschriftung. „Hold • More Context“ steht unter der Mitte.
 
 ### 6.2 Gesten
