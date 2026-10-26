@@ -171,9 +171,11 @@ body.talking #stage{box-shadow:0 0 0 3px #5fbf92}.cf.talk{outline:2px solid #5fb
 #stage{background:transparent!important}#stage video{background:#000;border-radius:16px}#hn i{background:rgba(0,0,0,.5)!important}
 .it.draft{outline:1px dashed var(--mc)}
 /* Aufnahme: ganzes Kamerabild + Fokusrahmen, Play-Button zwischen Aufnahmefeld und Kontextfeld, Serie im Streifen dazwischen */
-#fr{position:absolute;display:none;overflow:hidden;border-radius:16px;pointer-events:none;z-index:1}
-#fr i{position:absolute;border:2px solid rgba(255,255,255,.9);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.42);transition:all .25s}
-#app.rec #fr.on{display:block}
+#fo{position:absolute;display:none;overflow:hidden;border-radius:16px;pointer-events:none}
+#app.rec #fo{display:block}
+#fo .dim{fill:rgba(0,0,0,.45)}#fo .cr{fill:none;stroke:rgba(255,255,255,.45);stroke-width:1;stroke-dasharray:4 4}
+#fo .ln{fill:none;stroke:rgba(255,255,255,.95);stroke-width:2}#fo .hit{fill:none;stroke:transparent;stroke-width:30;pointer-events:stroke;touch-action:none;cursor:pointer}
+#fo .fs{transition:x .2s,y .2s,width .2s,height .2s,rx .2s,ry .2s}#fo.drag .fs{transition:none}#fo.drag .ln{stroke:#5fbf92;stroke-width:3}
 #app.rec #stage{overflow:visible;z-index:3}
 #app.rec #pp{top:auto;bottom:-60px;pointer-events:auto;touch-action:none;z-index:6}
 #rl{display:none;height:50px;flex:none;margin:0 12px;position:relative}
@@ -205,8 +207,8 @@ body.talking #stage{box-shadow:0 0 0 3px #5fbf92}.cf.talk{outline:2px solid #5fb
 #app[data-lw="2"] img.th{aspect-ratio:auto}
 </style></head><body>
 <div id="app"><header id="tb"><span id="ttl">SignClip <small>Steuerung<svg class="i" viewBox="0 0 24 24" width="14" height="14"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></small></span><span id="ml"></span><span id="mic"></span></header><div id="gt"></div><div id="fv"></div>
-<div id="stage"><video id="cam" muted playsinline></video><video id="pv" playsinline style="display:none"></video><div id="card"></div>
-<div id="bd"></div><div id="gh"></div><div id="toast"></div><div id="fb"></div><button id="gear"></button><div id="hk"></div><div id="hn"></div><div id="pp"></div><div id="rs"></div><div id="fl"></div><div id="ops"></div><div id="fr"><i></i></div></div>
+<div id="stage"><video id="cam" muted playsinline></video><video id="pv" playsinline style="display:none"></video><svg id="fo" xmlns="http://www.w3.org/2000/svg"><defs><mask id="fom"><rect width="100%" height="100%" fill="#fff"/><rect class="fs" fill="#000"/></mask></defs><rect class="dim" width="100%" height="100%" mask="url(#fom)"/><rect class="cr"/><rect class="fs ln"/><rect class="fs hit"/></svg><div id="card"></div>
+<div id="bd"></div><div id="gh"></div><div id="toast"></div><div id="fb"></div><button id="gear"></button><div id="hk"></div><div id="hn"></div><div id="pp"></div><div id="rs"></div><div id="fl"></div><div id="ops"></div></div>
 <div id="rl"></div><div id="trk"></div><div id="ct"></div><div id="dv"></div>
 <div id="bt"><span id="lg"></span><div id="cf">
 <div id="xf" class="cf" style="display:none"><div class="cc"></div><input class="wi" placeholder="Kontext …"></div>
@@ -287,7 +289,8 @@ const ACT=[
 ['entfernen','Aus Playlist entfernen',i=>plRm(i),null,'',''],
 ['notiz','Notiz zu Eintrag',i=>noteFor(i),null,'','nächster Satz geht an den Eintrag'],
 ['teilenClip','Einzelnen Clip teilen',i=>openShare(pl[i].c),null,'',''],
-['format','Seitenverhältnis',m=>setAR(m[2]),/^(format|seitenverhältnis) (.+)/,'','Einstellungen › Aufnahme']];
+['format','Seitenverhältnis',m=>setAR(m[2]),/^(format|seitenverhältnis) (.+)/,'','Einstellungen › Aufnahme'],
+['fokus','Fokus-Form',m=>{const f=FSH.find(x=>m[1].startsWith(x.slice(0,4)));if(f){FO.f=f;ls.set('focus',FO);paintFocus();toast('Fokus: '+FSN[f])}},/^fokus (\w+)/,'','Fokusrand antippen · ziehen = Größe']];
 const A=Object.fromEntries(ACT.map(a=>[a[0],a]));
 // Wisch-Belegung: Kontext → Richtung → [kurz, lang]
 const MAP={
@@ -766,10 +769,29 @@ document.addEventListener('pointerdown',e=>{if(document.querySelector('.sheet.on
 const COMMIT={stopp:1,weiter:1,teilen:1,nochmal:0,nochmalNeu:0,neu:0};
 function commitDrafts(save){if(!clips.some(c=>c.draft))return;if(save){clips.forEach(c=>{if(c.draft)c.draft=0});saveAll(1)}else{clips=clips.filter(c=>!c.draft);pl=pl.filter(p=>!p.c.draft);render()}}
 // Video immer im Seitenverhältnis, mittig, Freiraum außen
-function fitVideo(){const st=$('#stage'),W=st.clientWidth,H=st.clientHeight,rc=mode==='rec',fr=$('#fr');
+function fitVideo(){const st=$('#stage'),W=st.clientWidth,H=st.clientHeight,rc=mode==='rec';
  [cam,pv].forEach(v=>{v.style.setProperty('object-fit','contain','important');const a=v.videoWidth,b=v.videoHeight;if(!a||!b||!W||!H){v.style.width='';v.style.height='';v.style.left='';v.style.top='';return}
   const r=a/b,w=Math.min(W,H*r),h=w/r,top=rc&&v===cam?H-h:(H-h)/2;v.style.width=w+'px';v.style.height=h+'px';v.style.left=(W-w)/2+'px';v.style.top=top+'px';
-  if(v===cam){const cb=cropBox(a,b);fr.classList.toggle('on',!!cb&&cb.keep<.995);fr.style.cssText=`left:${(W-w)/2}px;top:${top}px;width:${w}px;height:${h}px`;if(cb){const k=w/a;fr.firstChild.style.cssText=`left:${cb.sx*k}px;top:${cb.sy*k}px;width:${cb.sw*k}px;height:${cb.sh*k}px`}}})}
+  if(v===cam)drawFocus((W-w)/2,top,w,h,a,b)})}
+// Fokus-Overlay im Aufnahmefenster: Kreis, Ellipse oder stark gerundetes Rechteck; innen klar, außen abgedunkelt.
+// Rand antippen = Form wechseln · Rand ziehen = Größe
+const FSH=['kreis','ellipse','rechteck'],FSN={kreis:'Kreis',ellipse:'Ellipse',rechteck:'Rechteck'};let FO=ls.get('focus',{f:'kreis',s:.8}),foBox=null;
+function focusRect(){if(!foBox)return null;const{cx,cy,cw,ch}=foBox,s=FO.s;let w,h,rx,ry;
+ if(FO.f==='kreis'){w=h=s*Math.min(cw,ch);rx=ry=w/2}else if(FO.f==='ellipse'){w=s*cw;h=s*ch;rx=w/2;ry=h/2}else{w=s*cw;h=s*ch;rx=ry=.24*Math.min(w,h)}
+ return{x:cx+(cw-w)/2,y:cy+(ch-h)/2,w,h,rx,ry}}
+function drawFocus(l,t,w,h,vw,vh){const o=$('#fo');o.style.cssText=`left:${l}px;top:${t}px;width:${w}px;height:${h}px`;o.setAttribute('viewBox',`0 0 ${w} ${h}`);
+ const cb=cropBox(vw,vh),k=w/vw;foBox=cb?{cx:cb.sx*k,cy:cb.sy*k,cw:cb.sw*k,ch:cb.sh*k}:{cx:0,cy:0,cw:w,ch:h};
+ const cr=o.querySelector('.cr');['x','y','width','height'].forEach((a,i)=>cr.setAttribute(a,[foBox.cx,foBox.cy,foBox.cw,foBox.ch][i]));cr.style.display=cb&&cb.keep<.995?'':'none';paintFocus()}
+function paintFocus(){const r=focusRect();if(!r)return;$('#fo').querySelectorAll('.fs').forEach(e=>{e.setAttribute('x',r.x);e.setAttribute('y',r.y);e.setAttribute('width',r.w);e.setAttribute('height',r.h);e.setAttribute('rx',r.rx);e.setAttribute('ry',r.ry)})}
+{const hit=$('#fo .hit'),o=$('#fo'),gh=$('#gh');let st=null;const stop=e=>e.stopPropagation();
+ const ctr=()=>{const b=o.getBoundingClientRect(),r=focusRect();return[b.left+r.x+r.w/2,b.top+r.y+r.h/2]};
+ hit.addEventListener('touchstart',stop,{passive:true});hit.addEventListener('touchmove',stop,{passive:true});hit.addEventListener('touchend',stop);
+ hit.addEventListener('pointerdown',e=>{e.stopPropagation();const[cx,cy]=ctr();st={x:e.clientX,y:e.clientY,d0:Math.hypot(e.clientX-cx,e.clientY-cy)||1,s0:FO.s,cx,cy,mv:false};try{hit.setPointerCapture(e.pointerId)}catch(x){}gh.textContent='Tippen: Form · Ziehen: Größe';gh.style.opacity=1});
+ hit.addEventListener('pointermove',e=>{if(!st)return;e.stopPropagation();if(!st.mv&&Math.hypot(e.clientX-st.x,e.clientY-st.y)<8)return;st.mv=true;o.classList.add('drag');
+  FO.s=Math.max(.25,Math.min(1,st.s0*Math.hypot(e.clientX-st.cx,e.clientY-st.cy)/st.d0));paintFocus();gh.textContent=FSN[FO.f]+' '+Math.round(FO.s*100)+' %'});
+ const end=e=>{if(!st)return;e.stopPropagation();const tap=!st.mv;st=null;o.classList.remove('drag');gh.style.opacity=0;
+  if(tap&&e.type==='pointerup'){FO.f=FSH[(FSH.indexOf(FO.f)+1)%FSH.length];paintFocus();toast('Fokus: '+FSN[FO.f])}ls.set('focus',FO)};
+ hit.addEventListener('pointerup',end);hit.addEventListener('pointercancel',end)}
 // Serie im Streifen zwischen Aufnahmefeld und Kontext: Clips mit demselben Hauptkontext, neuester am Button
 var T0=Date.now();
 function renderRl(){const el=$('#rl');if(mode!=='rec'){el.innerHTML='';return}const key=c=>c.ctx.filter(x=>x.m).map(x=>x.x).sort().join('|'),k=(rec?rec.pre:pending).map(x=>x.x).sort().join('|');
