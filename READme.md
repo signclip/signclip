@@ -36,7 +36,7 @@ SICHERUNG: Videos in der App Share > Teilen / Cloud / Ordner exportieren.
 | R3 | Häufiges liegt in der Mitte und im Wischen von der Mitte. Seltenes liegt hinter Halten, Randleisten oder Einstellungen. |
 | R4 | Keine zusätzlichen Buttons. Es gibt nur: Play-Button in der Videomitte, Gesten, Such- und Kontextfelder, Video. Ausnahmen: Such-Button (Logo, nur Suche) und grüner Punkt oben rechts. |
 | R5 | Videos und Vorschaubilder immer im Originalseitenverhältnis. Einzige Ausnahme: Timeline-Zoom. |
-| R6 | Aufnahme immer im Hochformat. |
+| R6 | Aufnahme im eingestellten Seitenverhältnis (Standard 9:16 Hochformat; 3:4, 4:5, 1:1, 4:3, 16:9 oder Kamera-Original in den Einstellungen oder per Sprache „Format …“). |
 | R7 | Speichern und Verwerfen geben deutliche Rückmeldung (grün/rot, Animation). |
 | R8 | Material 3, Pastell, SVG-Icons, keine Emojis oder Sonderzeichen als Symbole. |
 | R9 | Hinweise und Hilfe werden aus einer Tabelle erzeugt. Neue Aktion = eine Zeile Aktion plus ein Eintrag in der Gestentabelle. |
@@ -49,7 +49,7 @@ SICHERUNG: Videos in der App Share > Teilen / Cloud / Ordner exportieren.
 4. **Kamera und Ton** müssen zuverlässig starten: Zugriff beim ersten Antippen und bei jeder Rückkehr zur App, Rückfall auf Aufnahme ohne Ton mit Meldung. Stand: teilweise (auf iOS im Browser begrenzt).
 5. **Spracherkennung auf iOS** pausiert während der Videoaufnahme (Mikrofon-Konflikt). Kontext wird dort während der Aufnahme per Tastatur eingegeben. Stand: umgesetzt als Umgehung.
 6. **Videoformat:** MP4, wenn der Browser es kann, sonst WebM. Stand: umgesetzt.
-7. **Hochformat erzwingen:** liefert die Kamera Querformat, wird auf 720×1280 zugeschnitten aufgenommen. Stand: umgesetzt, auf dem Gerät zu prüfen.
+7. **Seitenverhältnis:** Die Kamera wird mittig auf das gewählte Verhältnis zugeschnitten (kurze Seite 480/720/1080). Die Vorschau zeigt denselben Ausschnitt. Stand: umgesetzt, auf dem Gerät zu prüfen.
 8. **Daten bleiben lokal** (IndexedDB, gewählter Ordner). Stand: umgesetzt.
 
 ## 4. Eingabekanäle
@@ -249,13 +249,13 @@ Stand der Anordnung: teilweise (Felder vorhanden, Breite und Position noch nicht
 
 | Nr. | Anforderung | Stand |
 | --- | --- | --- |
-| S1 | Nach jeder Aufnahme sofort in den hinterlegten Ordner speichern, nicht erst beim Teilen. Beim ersten Start nach lokalem Ordner oder Cloud fragen. | umgesetzt (Chrome/Android) |
-| S2 | Alle Videos aus mehreren eingebundenen Ordnern anzeigen, auch Cloud-Ordner, die auf dem Gerät als Ordner liegen. `index.json` liefert Kontext, Marker und Schnitte. | umgesetzt (Dateisystem-Zugriff) |
+| S1 | Nach jeder Aufnahme sofort in alle Speicherorte mit „Jede Aufnahme hier speichern“. Mehrere Speicherorte in den Einstellungen: Ordner, Nextcloud/Sciebo-Konto, freigegebener Ordner per Link. Fehlgeschlagenes wird wiederholt. | umgesetzt |
+| S2 | Alle Videos aus Speicherorten mit „In der Bibliothek zeigen“ anzeigen (Ordner und Cloud). Pro Video liefert `<video>.json` Kontext, Marker, Schnitte; ältere `index.json` wird weiter gelesen. | umgesetzt |
 | S3 | Dateiname aus Kontext: Hauptkontext, Kontext, Datum, Nummer. | umgesetzt |
 | S4 | Playlist als ein Video, Dateiname mit Suchkontext. | umgesetzt |
-| S5 | Teilen-Menü in fester Reihenfolge: **Teilen, Cloud, Ordner**. | umgesetzt |
+| S5 | Teilen-Menü in fester Reihenfolge: **Teilen, Cloud-Speicherorte und Freigaben, Ordner**. Jeder Speicherort ist eine eigene Kachel und kann per Namen gesprochen werden. | umgesetzt |
 | S6 | Teilen-Menü einfach schließen (Tippen daneben oder nach unten wischen). | umgesetzt |
-| S7 | Cloud: Nextcloud/Sciebo per WebDAV (Hochladen). iCloud über das Teilen-Menü. Auflisten von WebDAV-Inhalten in der Bibliothek. | Hochladen ja, Auflisten offen |
+| S7 | Cloud: Nextcloud/Sciebo per WebDAV und freigegebene Ordner per Link (Hochladen, Auflisten, Nachladen beim Abspielen). iCloud über das Teilen-Menü. CORS: Server muss die App erlauben, sonst Proxy (`tools/webdav-proxy.js`). | umgesetzt |
 | S8 | Löschen: Wisch links = aus Playlist entfernen. Rotes Löschfeld = endgültig löschen. | umgesetzt |
 | S9 | Zusammenfügen läuft in Echtzeit auf dem Gerät und zeigt Fortschritt. | umgesetzt |
 
@@ -295,7 +295,8 @@ Stand der Anordnung: teilweise (Felder vorhanden, Breite und Position noch nicht
 | Klammer-Kontextmodell | offen |
 | Tag-Zerlegung, Einfügen an beliebiger Stelle | offen |
 | Handform-Videogesten | offen |
-| WebDAV-Bibliothek | offen |
+| WebDAV-Bibliothek, mehrere Speicherorte, Freigabe-Links | umgesetzt (Branch aufnahme-speicherorte) |
+| Seitenverhältnis einstellbar | umgesetzt (Branch aufnahme-speicherorte) |
 | Capacitor/iOS-App | offen |
 
 **Vorgeschlagene Reihenfolge:** (1) Test auf Gerät und Stabilität von Kamera, Ton und Hochformat. (2) Suche-Layout unten und Timeline im Vorschaubild. (3) Kontextmodell mit Klammern und Tag-Zerlegung. (4) Videogesten und Capacitor für iOS.

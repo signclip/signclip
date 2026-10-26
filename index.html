@@ -170,6 +170,20 @@ body.talking #stage{box-shadow:0 0 0 3px #5fbf92}.cf.talk{outline:2px solid #5fb
 #app.search #cf{display:contents}#app.search #vw{grid-area:vw;margin:0 0 0 4px!important}#app.search #lg{grid-area:lg;justify-self:start}#app.search #aw{grid-area:aw;margin-left:8px!important}#app.search #sw{grid-area:sw}
 #stage{background:transparent!important}#stage video{background:#000;border-radius:16px}#hn i{background:rgba(0,0,0,.5)!important}
 .it.draft{outline:1px dashed var(--mc)}
+/* Speicherorte und Seitenverhältnis (Einstellungen) */
+#stor{display:flex;flex-direction:column;gap:8px;margin:6px 0}
+.tg-row{background:var(--bg);border-radius:14px;padding:10px 12px}
+.tg-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tg-h span{display:flex;color:var(--mut)}.tg-h small{flex-basis:100%;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tg-s{font-size:12px;color:#b3261e;margin:4px 0}.tg-s.ok{color:#2e7d5b}
+.sheet .tg-o label,.sheet .tg-f label{display:flex;align-items:center;gap:8px;margin:4px 0;color:var(--fg)}
+.tg-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.sheet .tg-b button,.tg-add button{padding:7px 12px;border:1px solid var(--line);border-radius:99px;background:var(--card);color:var(--fg);font:inherit;display:inline-flex;align-items:center;gap:5px}
+.tg-b button.pri{background:var(--mc);border-color:transparent;color:#1d1b20}
+.tg-f{background:var(--bg);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}.tg-f small{display:block;margin:4px 0}
+.tg-f details{margin:4px 0;color:var(--mut)}.tg-add{display:flex;gap:6px;flex-wrap:wrap}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.seg span{padding:6px 12px;border-radius:99px;border:1px solid var(--line);color:var(--fg);display:inline-flex;flex-direction:column;align-items:center;gap:3px;font-size:12px}
+.seg span i{display:block;border:1.5px solid currentColor;border-radius:2px}.seg span.on{background:var(--mc);border-color:transparent;color:#1d1b20}
+#app[data-lw="2"] img.th{aspect-ratio:auto}
 </style></head><body>
 <div id="app"><header id="tb"><span id="ttl">SignClip <small>Steuerung<svg class="i" viewBox="0 0 24 24" width="14" height="14"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></small></span><span id="ml"></span><span id="mic"></span></header><div id="gt"></div><div id="fv"></div>
 <div id="stage"><video id="cam" muted playsinline></video><video id="pv" playsinline style="display:none"></video><div id="card"></div>
@@ -184,12 +198,11 @@ body.talking #stage{box-shadow:0 0 0 3px #5fbf92}.cf.talk{outline:2px solid #5fb
 </div></div><div id="gb"></div><div id="dz"></div><div id="el" class="es"></div><div id="er" class="es"></div>
 <div id="hs" class="sheet"></div><div id="ss" class="sheet"></div>
 <div id="sh" class="sheet"><h2>Einstellungen</h2><p class="mut">Nach unten wischen zum Schließen</p>
-<h3>SPEICHERN</h3><button id="bDir">Ordner auf dem Gerät wählen</button><span id="dirN" class="mut"></span><br><button id="bLib">Weiteren Ordner einbinden (Bibliothek)</button>
-<input type="text" id="dUrl" placeholder="Nextcloud / Sciebo WebDAV-URL"><input type="text" id="dUser" placeholder="Benutzername"><input type="password" id="dPw" placeholder="App-Passwort (verschlüsselt auf dem Gerät)"><div id="davS" class="mut"></div><button id="bDav">Verbindung prüfen</button>
-<p class="mut">Sciebo: https://HOCHSCHULE.sciebo.de/remote.php/webdav/ · Nextcloud: https://HOST/remote.php/dav/files/BENUTZER/</p>
-<label><input type="checkbox" id="aSave" checked> Automatisch speichern</label>
+<h3>SPEICHERORTE</h3><div id="stor"></div>
+<label style="display:none"><input type="checkbox" id="aSave" checked> Automatisch speichern</label>
 <h3>STEUERUNG</h3><label><input type="checkbox" id="auto"> Direct AudioContext: Sprache wird direkt zu Kontext</label>
-<label>Freeze-Stopp nach <input type="number" id="frz" min="0" step="0.5" value="2" style="width:70px;display:inline"> Sekunden (0 = aus)</label><label>Sprechpause startet die Aufnahme nach <input type="number" id="wst" min="0" step="0.5" value="3" style="width:70px;display:inline"> Sekunden (0 = aus)</label><div id="shh"></div></div></div>
+<label>Freeze-Stopp nach <input type="number" id="frz" min="0" step="0.5" value="2" style="width:70px;display:inline"> Sekunden (0 = aus)</label><label>Sprechpause startet die Aufnahme nach <input type="number" id="wst" min="0" step="0.5" value="3" style="width:70px;display:inline"> Sekunden (0 = aus)</label><h3>AUFNAHME</h3><div id="arSel" class="seg"></div><label>Auflösung (kurze Seite) <select id="arQ" style="width:auto;display:inline"><option value="480">480</option><option value="720">720</option><option value="1080">1080</option></select></label><div id="shh"></div></div></div>
+<script src="storage.js"></script>
 <script>
 const $=s=>document.querySelector(s),esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])),D=864e5;
 const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
@@ -254,7 +267,8 @@ const ACT=[
 ['alsNaechstes','Eintrag als Nächstes',i=>nextUp(i),null,'',''],
 ['entfernen','Aus Playlist entfernen',i=>plRm(i),null,'',''],
 ['notiz','Notiz zu Eintrag',i=>noteFor(i),null,'','nächster Satz geht an den Eintrag'],
-['teilenClip','Einzelnen Clip teilen',i=>openShare(pl[i].c),null,'','']];
+['teilenClip','Einzelnen Clip teilen',i=>openShare(pl[i].c),null,'',''],
+['format','Seitenverhältnis',m=>setAR(m[2]),/^(format|seitenverhältnis) (.+)/,'','Einstellungen › Aufnahme']];
 const A=Object.fromEntries(ACT.map(a=>[a[0],a]));
 // Wisch-Belegung: Kontext → Richtung → [kurz, lang]
 const MAP={
@@ -282,7 +296,7 @@ function voice(raw,sp){const t=raw.toLowerCase().trim().replace(/[.,!?]/g,'');
  if(tkAct()&&tkClip){const x=raw.trim();if(x){tkClip.ctx.push({t:0,x});render();toast('Kontext ergänzt')}return}
  if(tkAct()&&(talk?talkTo:tkTo)){const x=raw.trim();if(x)routeWin(talk?talkTo:tkTo,x);return}
  if(lgTalk||(lgEnd&&Date.now()-lgEnd<3000)){const x=raw.trim();if(x){awItems.push(x);renderAw()}return}
- if(ssOpen){const k=(t.match(/speichern unter|system|menü|nextcloud|cloud|sciebo|ordner|dateien|icloud/)||[])[0];if(k)return pickShare(/speichern/.test(k)?'saveas':/ordner/.test(k)?'ordner':/cloud|sciebo/.test(k)?'cloud':/dateien|icloud/.test(k)?'dateien':'system')}
+ if(ssOpen){const tg=Store.all().find(x=>x.name&&t.includes(x.name.toLowerCase()));if(tg)return pickShare('t:'+tg.id);const k=(t.match(/speichern unter|system|menü|nextcloud|cloud|sciebo|ordner|dateien|icloud/)||[])[0];if(k)return pickShare(/speichern/.test(k)?'saveas':/ordner/.test(k)?'ordner':/cloud|sciebo/.test(k)?'cloud':/dateien|icloud/.test(k)?'dateien':'system')}
  const dl=$('#auto').checked&&t.split(/\s+/).length>2&&!/^(suche|notiz|ans ende)\b/.test(t);
  for(const a of ACT){const m=!dl&&a[3]&&t.match(a[3]);if(m)return a[2](m)}
  const x=raw.trim();if(!x)return;
@@ -306,14 +320,14 @@ function addCtx(x){(rec?rec.ctx:pending).push(rec?{t:rt(),x}:{t:0,x,m:1});if(!re
 function start(){if(rec||busyT)return;if(IOS&&sr){wantBak=true;want=false;try{sr.stop()}catch(e){}}setMode('rec');rec={t0:performance.now(),ctx:[...pending.map(p=>({...p})),...carryX],pre:pending.map(p=>({...p})),pt:0,paused:false,ps:0,mk:[],sp:[],ch:[],mr:null};pending=[];carryX=[];
  if(!camOK)toast('Keine Kamera: Zugriff erlauben (Aufnahme ohne Video)');
  else if(!window.MediaRecorder)toast('Dieser Browser kann nicht aufnehmen (MediaRecorder fehlt)');
- else{let mr=null,err='';for(const src of[()=>recSource(),()=>cam.srcObject]){try{mr=new MediaRecorder(src(),MIME?{mimeType:MIME,videoBitsPerSecond:2500000}:undefined);break}catch(e){err=e.message;rcStop()}}
-  if(mr){mr.ondataavailable=e=>e.data.size&&rec&&rec.ch.push(e.data);mr.onerror=()=>toast('Aufnahmefehler');try{mr.start(250);rec.mr=mr}catch(e){toast('Aufnahme startet nicht: '+e.message)}}else toast('Aufnahme nicht möglich: '+err)}
+ else{let mr=null,err='';for(const src of[()=>recSource(),()=>cam.srcObject]){try{const d=arDims()||[cam.videoWidth||720,cam.videoHeight||1280];rec.w=d[0];rec.h=d[1];mr=new MediaRecorder(src(),MIME?{mimeType:MIME,videoBitsPerSecond:Math.round(2500000*d[0]*d[1]/921600)}:undefined);break}catch(e){err=e.message;rcStop()}}
+  if(mr){const R=rec;mr.ondataavailable=e=>{if(e.data.size)R.ch.push(e.data)};mr.onerror=()=>toast('Aufnahmefehler');try{mr.start(250);rec.mr=mr}catch(e){toast('Aufnahme startet nicht: '+e.message)}}else toast('Aufnahme nicht möglich: '+err)}
  moved=false;still=0;render()}
 function stop(){if(!rec)return;const r=rec;r.dur=rt();rec=null;rcStop();render();if(IOS&&wantBak){wantBak=false;setTimeout(listen,600)}
  if(r.mr&&r.mr.state!=='inactive'){r.mr.onstop=()=>fin(r,new Blob(r.ch,{type:r.mr.mimeType}));r.mr.stop()}else fin(r,null)}
 function fin(r,blob){if(blob&&!blob.size){toast('Aufnahme leer: Browser liefert keine Videodaten');blob=null}const url=blob?URL.createObjectURL(blob):null,cuts=[0,...r.sp,r.dur],from=clips.length;let n=0;
  for(let i=0;i<cuts.length-1;i++){const a=cuts[i],b=cuts[i+1];if(b-a<.5)continue;const ctx=r.ctx.filter(x=>x.t>=a&&x.t<b).map(x=>({t:x.t-a,x:x.x,m:x.m,g:x.g}));if(i>0)ctx.unshift(...r.pre.map(x=>({t:0,x:x.x,m:1,g:x.g})));
-  clips.push({id:N++,title:ctx[0]?ctx[0].x.split(' ').slice(0,4).join(' '):'Clip '+N,date:Date.now(),s:a,dur:b-a,url,blob,hue:Math.random()*360|0,ctx,mk:r.mk.filter(m=>m>=a&&m<b).map(m=>m-a)});n++}
+  clips.push({id:N++,title:ctx[0]?ctx[0].x.split(' ').slice(0,4).join(' '):'Clip '+N,date:Date.now(),s:a,dur:b-a,url,blob,w:r.w,h:r.h,hue:Math.random()*360|0,ctx,mk:r.mk.filter(m=>m>=a&&m<b).map(m=>m-a)});n++}
  toast(n+' Clip'+(n==1?'':'s')+' gespeichert');clips.slice(from).forEach(genThumb);if(r.draftMode){clips.slice(from).forEach(c=>c.draft=1);pending=r.pre.map(p=>({...p}));carryX=r.ctx.filter(x=>!x.m).map(x=>({...x,t:0}))}else flash('save');if($('#aSave').checked&&!r.draftMode)saveAll(1);render();if(afterFin){const f=afterFin;afterFin=null;f(clips.slice(from))}}
 function marker(){if(rec){rec.mk.push(Math.max(0,rt()-1));toast('Marker '+fmt(rt()))}else if(cur()&&playing){cur().mk.push(pos);toast('Marker '+fmt(pos));render()}}
 function schnitt(){if(rec){rec.sp.push(rt());toast('Schnitt '+fmt(rt()))}else if(cur()&&playing)splitAt(idx,pos)}
@@ -356,50 +370,50 @@ function openPl(){if(!pl.length)return toast('Playlist ist leer');closeSheets();
 function refreshPl(){if($('#ss').dataset.k==='pl'){pl.length?openPl():closeSheets()}}
 // ================= ZUSAMMENFÜGEN =================
 async function merge(){if(busyT||pl.length<2)return toast('Mindestens 2 Clips nötig');const list=pl.map(p=>p.c);playing=false;pv.pause();
- const cv=document.createElement('canvas');cv.width=640;cv.height=480;const g=cv.getContext('2d');let mr;
+ const f0=list.find(c=>c.w&&c.h),md=f0?[f0.w,f0.h]:(arDims()||[720,1280]),W=md[0],H=md[1];const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');let mr;
  try{mr=new MediaRecorder(cv.captureStream(30),MIME?{mimeType:MIME}:undefined)}catch(e){return toast('Zusammenfügen hier nicht möglich')}
  const ch=[];mr.ondataavailable=e=>e.data.size&&ch.push(e.data);mr.start(250);
  const mv=document.createElement('video');mv.muted=true;mv.playsInline=true;mv.style.cssText='position:fixed;width:2px;opacity:0';document.body.appendChild(mv);
  const wait=ms=>new Promise(r=>setTimeout(r,ms));let tot=0;
  for(let i=0;i<list.length;i++){const c=list[i];busyT=`Füge zusammen ${i+1}/${list.length}`;ui();const t0=performance.now();
   if(c.url){mv.src=c.url;await new Promise(r=>{mv.onloadedmetadata=r;setTimeout(r,1500)});mv.currentTime=c.s||0;await wait(250);try{await mv.play()}catch(e){}
-   while((performance.now()-t0)/1000<c.dur&&!mv.ended){g.drawImage(mv,0,0,640,480);await wait(33)}mv.pause()}
-  else while((performance.now()-t0)/1000<c.dur){g.fillStyle=`hsl(${c.hue} 55% 32%)`;g.fillRect(0,0,640,480);g.fillStyle='#fff';g.font='bold 32px system-ui';g.fillText(c.title,30,230);g.font='18px system-ui';g.fillText(rel(c.date),30,265);await wait(33)}
+   while((performance.now()-t0)/1000<c.dur&&!mv.ended){const vw=mv.videoWidth||W,vh=mv.videoHeight||H,k=Math.min(W/vw,H/vh);g.fillStyle='#000';g.fillRect(0,0,W,H);g.drawImage(mv,(W-vw*k)/2,(H-vh*k)/2,vw*k,vh*k);await wait(33)}mv.pause()}
+  else while((performance.now()-t0)/1000<c.dur){g.fillStyle=`hsl(${c.hue} 55% 32%)`;g.fillRect(0,0,W,H);g.fillStyle='#fff';g.font='bold '+Math.round(W/20)+'px system-ui';g.fillText(c.title,W*.05,H/2);g.font=Math.round(W/36)+'px system-ui';g.fillText(rel(c.date),W*.05,H/2+W/16);await wait(33)}
   tot+=c.dur}
  const done=new Promise(r=>mr.onstop=r);mr.stop();await done;mv.remove();
- const blob=new Blob(ch,{type:mr.mimeType}),c0={id:N++,title:(terms.length?'Playlist '+terms.join(' '):'Zusammenschnitt '+list.length+' Clips'),merged:1,date:Date.now(),s:0,dur:tot,url:URL.createObjectURL(blob),blob,hue:210,ctx:[{t:0,x:list.map(c=>c.title).join(' → ')}],mk:[]};
+ const blob=new Blob(ch,{type:mr.mimeType}),c0={id:N++,title:(terms.length?'Playlist '+terms.join(' '):'Zusammenschnitt '+list.length+' Clips'),merged:1,date:Date.now(),s:0,dur:tot,w:W,h:H,url:URL.createObjectURL(blob),blob,hue:210,ctx:[{t:0,x:list.map(c=>c.title).join(' → ')}],mk:[]};
  clips.push(c0);lastMerge=c0;busyT=null;pl=[{c:c0,why:new Set(['Zusammenschnitt'])}];idx=-1;play(0);toast('Zusammenschnitt fertig');if($('#aSave').checked)saveAll()}
 async function shareList(){if(pl.length>1&&!busyT){const b=lastMerge;await merge();if(lastMerge===b){openShare(pl[0]&&pl[0].c);return}}openShare(pl.length===1?pl[0].c:lastMerge)}
 // ================= SPEICHERN / TEILEN =================
-let dirH=null;
-async function putFile(name,blob){if(dirH){const f=await dirH.getFileHandle(name,{create:true}),w=await f.createWritable();await w.write(blob);await w.close()}
- const u=$('#dUrl').value.trim(),pw=$('#dPw').value;if(u&&pw){const r=await fetch(u.replace(/\/?$/,'/')+encodeURIComponent(name),{method:'PUT',headers:{Authorization:'Basic '+btoa($('#dUser').value+':'+pw)},body:blob});if(!r.ok)throw new Error('HTTP '+r.status)}}
+// Speichern läuft über Store (storage.js): mehrere Speicherorte, Begleitdatei pro Video.
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),1500)}
-async function saveAll(q){const web=$('#dUrl').value.trim()&&$('#dPw').value;
- if(!dirH&&!web){if(!q)return toast('Erst Ordner oder Cloud einrichten (Einstellungen)');let n='';for(const c of clips)if(c.blob&&!c.lib&&!c.draft&&!c.blob.fid){c.blob.fid=fileName(c);dl(c.blob,c.blob.fid);n=c.blob.fid}if(n)toast('Download: '+n);return}
- try{let n='';for(const c of clips){if(c.blob&&!c.lib&&!c.draft&&!c.blob.fid){const nm=fileName(c);await putFile(nm,c.blob);c.blob.fid=nm;n=nm}}
-  await putFile('index.json',new Blob([JSON.stringify(clips.filter(c=>!c.lib).map(c=>({id:c.id,title:c.title,date:c.date,file:c.blob&&c.blob.fid,s:c.s,dur:c.dur,ctx:c.ctx,mk:c.mk})),null,1)],{type:'application/json'}));toast(n?'Gespeichert: '+n:'Gespeichert')}
- catch(e){toast('Speichern fehlgeschlagen: '+e.message)}}
+async function saveAll(q){if(!Store.hasAuto()){if(!q)return toast('Erst Speicherort einrichten (Einstellungen)');let n='';for(const c of clips)if(c.blob&&!c.lib&&!c.draft&&!c.dl){c.dl=1;const nm=c.file||fileName(c);dl(c.blob,nm);n=nm}if(n)toast('Download: '+n);return}
+ await Store.flush(q?1:0)}
 async function shareFile(c){const f=new File([c.blob],fileName(c),{type:c.blob.type});
  try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:c.title});else{const a=document.createElement('a');a.href=c.url;a.download=f.name;a.click()}}catch(e){toast('Abgebrochen')}}
 async function saveAs(c){if(!c||!c.blob)return toast('Erst zusammenfügen oder aufnehmen');const name=fileName(c);
  try{if(window.showSaveFilePicker){const h=await showSaveFilePicker({suggestedName:name,types:[{description:'Video',accept:{[c.blob.type.split(';')[0]]:['.'+EXT(c.blob.type)]}}]});const w=await h.createWritable();await w.write(c.blob);await w.close();toast('Gespeichert')}
  else{const a=document.createElement('a');a.href=c.url;a.download=name;a.click();toast('Download gestartet')}}catch(e){toast('Abgebrochen')}}
 function openShare(c){ssc=c||lastMerge||[...clips].reverse().find(x=>x.blob)||clips[clips.length-1];closeSheets();ssOpen=true;
- $('#ss').innerHTML=`<h2>Teilen</h2><p class="mut">${esc(ssc.title)} · Ziel antippen oder sagen</p>`+[['system',ic('share'),'Teilen','Nachricht, Mail, AirDrop, Dateien'],['cloud',ic('cloud'),'Cloud','Nextcloud / Sciebo'],['ordner',ic('folder'),'Ordner','Auf dem Gerät speichern']].map(([k,i,t,s])=>`<div class="tile" onclick="pickShare('${k}')"><span>${i}</span><div><b>${t}</b><small>${s}</small></div></div>`).join('');
+ const T=(k,i,t,d)=>`<div class="tile" onclick="pickShare('${k}')"><span>${ic(i)}</span><div><b>${esc(t)}</b><small>${esc(d)}</small></div></div>`;
+ const tg=[...Store.all()].sort((a,b)=>(a.kind==='dir')-(b.kind==='dir')),hasCloud=tg.some(t=>t.kind!=='dir');
+ $('#ss').innerHTML=`<h2>Teilen</h2><p class="mut">${esc(ssc.title)} · Ziel antippen oder sagen</p>`+T('system','share','Teilen','Nachricht, Mail, AirDrop, Dateien')+
+  tg.map(t=>T('t:'+t.id,Store.icon(t),t.name,Store.kindLabel(t)+(Store.isSaved(t,ssc)?' · schon gespeichert':t.auto?' · automatisch':''))).join('')+
+  (hasCloud?'':T('setup','cloud','Cloud oder Freigabe','Nextcloud, Sciebo, freigegebener Ordner einrichten'))+
+  (window.showDirectoryPicker?T('newdir','create_new_folder','Anderer Ordner …','Auf dem Gerät wählen'):T('saveas','save','Speichern unter …','Download / Dateien'));
  $('#ss').classList.add('on');listen()}
 async function pickShare(k){closeSheets();const c=ssc;if(!c)return;
- if(k==='cloud'||k==='ordner'){if(!c.blob)return toast('Demo-Video ohne Datei: erst aufnehmen oder zusammenfügen');
-  if(k==='ordner'&&!dirH){try{dirH=await showDirectoryPicker({mode:'readwrite'})}catch(e){return saveAs(c)}}
-  if(k==='cloud'&&!($('#dUrl').value.trim()&&$('#dPw').value)){$('#gear').click();return toast('Erst Nextcloud-Adresse und App-Passwort eintragen')}
-  try{await saveOne(c);toast('Gespeichert')}catch(e){toast('Fehlgeschlagen: '+e.message)}return}
  if(k==='saveas')return saveAs(c);
- if(c.blob)return shareFile(c);
- const text='SignClip: '+(pl.length?pl.map(p=>p.c.title).join(' → '):c.title);try{navigator.share?await navigator.share({text}):(await navigator.clipboard.writeText(text),toast('Text kopiert'))}catch(e){}}
-async function saveOne(c){if(!c.blob.fid)c.blob.fid=fileName(c);await putFile(c.blob.fid,c.blob)}
+ if(k==='setup'){$('#gear').click();Store.openForm('share');return}
+ if(k==='system'){if(c.blob)return shareFile(c);const text='SignClip: '+(pl.length?pl.map(p=>p.c.title).join(' → '):c.title);try{navigator.share?await navigator.share({text}):(await navigator.clipboard.writeText(text),toast('Text kopiert'))}catch(e){}return}
+ const all=Store.all();let t=k.startsWith('t:')?Store.get(k.slice(2)):k==='cloud'?all.find(x=>x.kind!=='dir'):k==='ordner'?all.find(x=>x.kind==='dir'):null;
+ if(k==='newdir'||(k==='ordner'&&!t)){t=await Store.addDir({auto:false});if(!t)return saveAs(c)}
+ if(!t){$('#gear').click();return toast('Erst Speicherort einrichten')}
+ if(!c.blob&&!c.remote)return toast('Demo-Video ohne Datei: erst aufnehmen oder zusammenfügen');
+ toast('Speichere in '+t.name+' …');try{await Store.saveClip(t,c);toast('Gespeichert in '+t.name)}catch(e){toast(t.name+': '+e.message)}}
 // ================= ANZEIGE =================
 let sig='';
-function ui(){upd();$('#bd').textContent=busyT||(rec?'':mode==='rec'?'Kontext · '+($('#auto').checked?'Direct Audio an':'Tippen = Start'):playing?(idx+1)+' / '+pl.length:'');
+function ui(){upd();$('#bd').textContent=busyT||(rec?'':mode==='rec'?'Kontext · '+($('#auto').checked?'Direct Audio an':'Tippen = Start')+' · '+(AR==='orig'?'Kamera':AR):playing?(idx+1)+' / '+pl.length:'');
 }
 function render(){document.querySelectorAll('.rail,#lr').forEach(r=>r.remove());clearTimeout(pt);pt=setTimeout(persist,800);ui();if(mode==='search')renderSw();const ct=$('#ct');$('#in').placeholder=mode==='rec'?'Kontext sprechen oder tippen':'Suchen oder ergänzen';
  if(mode==='rec'){renderCf();ct.innerHTML='';$('#trk').style.display='none';return}
@@ -414,13 +428,13 @@ function setMode(m){if(m!=='rec'&&m!=='search')return;if(rec&&m==='search')stop(
  cam.classList.toggle('hide',m!=='rec');
  if(m==='rec'){playing=false;pv.pause();pv.style.display='none';card.style.display='none'}else if(cur()){pv.style.display=cur().url?'block':'none';card.style.display=cur().url?'none':'flex'}
  $('#hist').style.display='none';render()}
-function closeSheets(){if($('#sh').classList.contains('on'))ls.set('cfg',{u:$('#dUrl').value,n:$('#dUser').value,f:$('#frz').value,w:$('#wst').value});
+function closeSheets(){if($('#sh').classList.contains('on'))ls.set('cfg',{...ls.get('cfg',{}),f:$('#frz').value,w:$('#wst').value});
  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));ssOpen=false;$('#ss').dataset.k=''}
 // ================= KAMERA, BEWEGUNG, EINGABE =================
 const mc=document.createElement('canvas');mc.width=24;mc.height=18;const mx=mc.getContext('2d',{willReadFrequently:true});
 let camOK=false,prev=null,mot=0,still=0,moved=false,act=0,cool=0,cys=[];
 async function initCam(){if(camOK&&cam.srcObject&&cam.srcObject.getTracks().every(t=>t.readyState==='live'))return;
- const v={facingMode:FACING,width:{ideal:720},height:{ideal:1280},aspectRatio:{ideal:0.5625}},a={echoCancellation:true,noiseSuppression:true};
+ const d=arDims(),land=d&&d[0]>d[1],v={facingMode:FACING,width:{ideal:land?1280:720},height:{ideal:land?720:1280},aspectRatio:{ideal:land?16/9:0.5625}},a={echoCancellation:true,noiseSuppression:true};
  try{let st;try{st=await navigator.mediaDevices.getUserMedia({video:v,audio:a})}catch(e){st=await navigator.mediaDevices.getUserMedia({video:v});toast('Mikro nicht verfügbar: Aufnahme ohne Ton')}
   cam.srcObject=st;cam.setAttribute('playsinline','');await cam.play();camOK=true}catch(e){camOK=false;toast('Kamera blockiert: Zugriff erlauben, dann antippen')}}
 setInterval(()=>{if(!camOK||cam.readyState<2)return;mx.drawImage(cam,0,0,24,18);const d=mx.getImageData(0,0,24,18).data;let n=0,sy=0;const g=[];
@@ -455,8 +469,7 @@ function listen(){if(!SR){if(!listen.w){listen.w=1;toast('Spracherkennung hier n
  sr.onerror=e=>{if(/not-allowed|service/.test(e.error)){want=false;toast('Mikrofon/Sprache blockiert: '+e.error)}else if(!/no-speech|aborted/.test(e.error))toast('Sprache: '+e.error)};sr.onend=()=>{sr=null;if(want)setTimeout(listen,300)};try{sr.start()}catch(e){sr=null}}
 
 document.addEventListener('pointerdown',()=>{if(!sr&&!want&&SR)listen()},{once:true});
-$('#bDir').onclick=async()=>{try{dirH=await showDirectoryPicker({mode:'readwrite'});try{db.transaction('c','readwrite').objectStore('c').put({id:'dirH',h:dirH})}catch(e){}libDirs.push(dirH);saveDirs();scanLib(dirH);$('#dirN').textContent=' '+dirH.name}catch(e){toast('Ordnerwahl hier nicht verfügbar (z. B. iOS): WebDAV oder Dateien nutzen')}};
-{const c=ls.get('cfg',{});$('#dUrl').value=c.u||'';$('#dUser').value=c.n||'';if(c.f)$('#frz').value=c.f;if(c.w!=null)$('#wst').value=c.w}
+{const c=ls.get('cfg',{});if(c.f)$('#frz').value=c.f;if(c.w!=null)$('#wst').value=c.w}
 setInterval(()=>{if(playing&&mode==='search'&&cur()){const c=cur();pos=c.url?pv.currentTime-(c.s||0):pos+.1;$('#fb').style.background='#fff';$('#fb').style.width=Math.min(100,pos/c.dur*100)+'%';
  const s=document.querySelector('.sg.c i');if(s)s.style.height=Math.min(100,pos/c.dur*100)+'%';if(pos>=c.dur-.05||(c.url&&pv.ended))play(idx+1)}ui()},100);
 var pt;
@@ -466,7 +479,7 @@ function openPl(){setLw((lwi+1)%3)}
  dv.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;setLw($('#app').classList.contains('vfull')?(dx>30?0:-1):(Math.abs(dx)>30?(lwi===0&&dx<0?-1:lwi+(dx>0?1:-1)):(lwi+1)%3))})}
 // Lokaler Speicher (IndexedDB): Clips bleiben nach dem Schließen erhalten
 let db;const oi=indexedDB.open('signclip',1);oi.onupgradeneeded=()=>oi.result.createObjectStore('c',{keyPath:'id'});
-oi.onsuccess=()=>{db=oi.result;db.transaction('c').objectStore('c').getAll().onsuccess=e=>{e.target.result.forEach(r=>{if(r.id==='dirH'){dirH=r.h;return}if(r.id==='dirs'){libDirs=r.h||[];return}if(r.id==='k'){dkey=r.key;return}r.url=r.blob?URL.createObjectURL(r.blob):null;if(!clips.some(c=>c.id===r.id)){clips.push(r);N=Math.max(N,r.id+1)}});render()}};
+oi.onsuccess=()=>{db=oi.result;db.transaction('c').objectStore('c').getAll().onsuccess=e=>{e.target.result.forEach(r=>{if(Store.idb(r))return;if(r.id==='k'){dkey=r.key;return}r.url=r.blob?URL.createObjectURL(r.blob):null;if(!clips.some(c=>c.id===r.id)){clips.push(r);N=Math.max(N,r.id+1)}});render()}};
 function persist(){if(!db)return;try{const s=db.transaction('c','readwrite').objectStore('c');clips.filter(c=>c.id>=10&&!c.lib&&!c.draft).forEach(c=>{const{url,...x}=c;s.put(x)})}catch(e){}}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
@@ -584,7 +597,7 @@ function delAll(h){const ids=pl.map(p=>p.c.id);closeSheets();if(h)ids.forEach(de
   if(Math.abs(dx)<12&&Math.abs(dy)<12){if(Date.now()-lt<300){lt=0;awOpen=!awOpen;if($('#auto').checked)daField=awOpen?'aw':'sw';renderAw();toast(awOpen?'Erweiterter Kontext offen':'Erweiterter Kontext zu')}else lt=Date.now();return}
   if(!S())return;if(Math.abs(dx)>Math.abs(dy)){if(dx>50)runAct('teilen');else if(dx<-50)runAct('einstellungen')}else if(dy<-50)runAct('kontextAlle')});
  l.addEventListener('pointercancel',()=>{clearTimeout(t);lgTalk=false;s=null;$('#dz').classList.remove('on','hot')})}
-document.addEventListener('pointerdown',async()=>{try{if(dirH&&(await dirH.queryPermission({mode:'readwrite'}))!=='granted')await dirH.requestPermission({mode:'readwrite'})}catch(e){}for(const h of libDirs){try{if((await h.queryPermission({mode:'read'}))!=='granted')await h.requestPermission({mode:'read'});await scanLib(h)}catch(e){}}},{once:true});
+document.addEventListener('pointerdown',()=>Store.perm(),{once:true});
 setInterval(()=>{$('#lg').classList.toggle('auto',$('#auto').checked)},300);
 let hf=false,shareArm=false,maxLen=0,maxDays=0;
 const okF=c=>(!maxLen||c.dur<=maxLen)&&(!maxDays||(Date.now()-c.date)/D<=maxDays);
@@ -615,7 +628,7 @@ const ed2=g=>{const id=((MAP[CTX()]||{})[g]||[])[0];if(id){toast(A[id][1]);runAc
 function edgeHints(){const m=MAP[CTX()]||{},L=k=>{const a=m[k];return a&&a[0]&&A[a[0]]?(HL[CTX()+k]||A[a[0]][1]):''};
  $('#gt').innerHTML='<i></i>'+(L('Rand↓')?`<span>${ic('arrow_downward',12)}${L('Rand↓')}</span>`:'');$('#gb').innerHTML='<i></i>'+(L('Rand↑')?`<span>${ic('arrow_upward',12)}${L('Rand↑')}</span>`:'')}
 {const sw=(el,g,sg)=>{let y=null;el.addEventListener('touchstart',e=>y=e.touches[0].clientY,{passive:true});el.addEventListener('touchend',e=>{if(y==null)return;const dy=e.changedTouches[0].clientY-y;y=null;if(sg*dy>40)ed2(g)});el.addEventListener('click',()=>{})};sw($('#gt'),'Rand↓',1);sw($('#gb'),'Rand↑',-1)}
-function firstRun(){closeSheets();$('#ss').innerHTML=`<h2>Wo sollen Videos gespeichert werden?</h2><p class="mut">Jede Aufnahme wird danach sofort dort abgelegt.</p><div class="tile" onclick="ls.set('setup',1);closeSheets();$('#bDir').click()"><span>${ic('folder')}</span><div><b>Ordner auf dem Gerät</b><small>Android, Chrome, Desktop</small></div></div><div class="tile" onclick="ls.set('setup',1);closeSheets();$('#gear').click()"><span>${ic('cloud')}</span><div><b>Nextcloud / Sciebo</b><small>WebDAV, in den Einstellungen</small></div></div><div class="tile" onclick="ls.set('setup',1);closeSheets()"><span>${ic('phone')}</span><div><b>Später</b><small>Videos bleiben in der App. Teilen → Dateien / iCloud</small></div></div>`;$('#ss').classList.add('on')}
+function firstRun(){closeSheets();$('#ss').innerHTML=`<h2>Wo sollen Videos gespeichert werden?</h2><p class="mut">Jede Aufnahme wird danach sofort dort abgelegt.</p><div class="tile" onclick="ls.set('setup',1);closeSheets();Store.addDir({auto:true})"><span>${ic('folder')}</span><div><b>Ordner auf dem Gerät</b><small>Android, Chrome, Desktop</small></div></div><div class="tile" onclick="ls.set('setup',1);closeSheets();$('#gear').click();Store.openForm('dav')"><span>${ic('cloud')}</span><div><b>Nextcloud / Sciebo</b><small>Konto per WebDAV</small></div></div><div class="tile" onclick="ls.set('setup',1);closeSheets();$('#gear').click();Store.openForm('share')"><span>${ic('folder_shared')}</span><div><b>Freigegebener Ordner</b><small>Sciebo-/Nextcloud-Link einer Gruppe</small></div></div><div class="tile" onclick="ls.set('setup',1);closeSheets()"><span>${ic('phone')}</span><div><b>Später</b><small>Videos bleiben in der App. Teilen → Dateien / iCloud</small></div></div>`;$('#ss').classList.add('on')}
 document.addEventListener('pointerdown',()=>{if(!camOK)initCam()});document.addEventListener('visibilitychange',()=>{if(!document.hidden)initCam()});
 if(!ls.get('setup',0))setTimeout(firstRun,800);
 $('#dz').innerHTML=ic('delete',22);
@@ -633,8 +646,8 @@ function navNext(){const s=navState();if(s==='cap'){if(rec){rec.draftMode=1;afte
 function navPrev(){const s=navState();if(s==='cap')restoreSearch();else if(s==='list')fsNow();else toCap()}
 {const sw=(el,sg,fn)=>{let x=null;el.addEventListener('touchstart',e=>x=e.touches[0].clientX,{passive:true});el.addEventListener('touchend',e=>{if(x==null)return;const dx=e.changedTouches[0].clientX-x;x=null;if(sg*dx>50)fn()})};sw($('#el'),1,navNext);sw($('#er'),-1,navPrev)}
 function navHtml(){return'<h3>RÄNDER</h3><ul class="gl"><li>Linker Rand nach rechts: Aufnahme speichern, Video im Vollbild · nochmal: letzte Suche oder alle Videos · nochmal: zurück zur Aufnahme (Suche wird gemerkt)</li><li>Rechter Rand nach links: letzte Suche · nochmal: aktuelles Video im Vollbild · nochmal: Aufnahme</li><li>Obere Leiste nach unten: alles zurücksetzen (Aufnahme leer, Suche leer, Gesamtübersicht)</li><li>Punkt oben Mitte: Tippen = Settings, Halten = Direct AudioContext aus/an, Halten und auf ein Kontextfeld ziehen = Ziel mit grüner Umrandung</li></ul>'}
-{const sh=$('#sh'),hs=[...sh.querySelectorAll('h3')],a=hs.find(x=>/SPEICHERN/.test(x.textContent)),b=hs.find(x=>/STEUERUNG/.test(x.textContent)),shh=$('#shh');
- if(a&&b&&shh){const stor=document.createElement('div'),ctrl=document.createElement('div');let n=a;while(n&&n!==b){const nx=n.nextSibling;stor.appendChild(n);n=nx}n=b;while(n&&n!==shh){const nx=n.nextSibling;ctrl.appendChild(n);n=nx}sh.insertBefore(ctrl,shh);sh.appendChild(stor)}}
+{const sh=$('#sh'),hs=[...sh.querySelectorAll('h3')],a=hs.find(x=>/SPEICHER/.test(x.textContent)),b=hs.find(x=>/STEUERUNG/.test(x.textContent)),shh=$('#shh');
+ if(a&&b&&shh){const stor=document.createElement('div'),ctrl=document.createElement('div');let n=a;while(n&&n!==b){const nx=n.nextSibling;stor.appendChild(n);n=nx}n=b;while(n&&n!==shh){const nx=n.nextSibling;ctrl.appendChild(n);n=nx}sh.insertBefore(ctrl,shh);sh.insertBefore(stor,ctrl)}}
 let talkEnd=0,tkTo='',tkClip=null,prevTalk=false,lastDir='',FACING='user';
 const tkAct=()=>talk||Date.now()-talkEnd<2500;
 setInterval(()=>{if(talk&&!sr&&SR){want=true;listen()}if(talk&&!SR&&!listen.w2){listen.w2=1;toast('Spracherkennung hier nicht verfügbar (z. B. Firefox oder iOS-Home-Screen-App): bitte tippen')}if(talk){tkTo=talkTo;tkClip=talkClip}if(prevTalk&&!talk){talkEnd=Date.now();try{if(sr)sr.stop()}catch(e){}}prevTalk=talk},60);
@@ -660,27 +673,31 @@ const letters=new Set(),LET=[...'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'];
 const initials=c=>{const o=new Set();[c.title,...c.ctx.map(x=>x.x)].forEach(t=>String(t||'').split(/[\s,;·\-\/]+/).forEach(w=>{if(!w)return;const u=w[0].toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');o.add(/[A-Z]/.test(u)?u:'#')}));return o};
 const hasInit=c=>{const i=initials(c);return[...letters].some(l=>i.has(l))};
 IC.check='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
-let rcT=null,talkSpoke=false,armStart=0,resume=null,libDirs=[],favs=ls.get('favs',[]),stash=null;const PREF=ls.get('pref',{});
-function recSource(){const v=cam,st=v.srcObject;if(!(v.videoWidth>v.videoHeight))return st;const c=document.createElement('canvas');c.width=720;c.height=1280;const g=c.getContext('2d');
- const draw=()=>{const vw=v.videoWidth,vh=v.videoHeight,k=Math.max(720/vw,1280/vh),w=vw*k,h=vh*k;g.drawImage(v,(720-w)/2,(1280-h)/2,w,h)};draw();rcT=setInterval(draw,33);
+IC.folder_shared='M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-5 3c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm4 8h-8v-1c0-1.33 2.67-2 4-2s4 .67 4 2v1z';
+IC.create_new_folder='M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z';
+let rcT=null,talkSpoke=false,armStart=0,resume=null,favs=ls.get('favs',[]),stash=null;const PREF=ls.get('pref',{});
+function recSource(){const v=cam,st=v.srcObject,d=arDims(),vw=v.videoWidth,vh=v.videoHeight;if(!d||!vw||!vh)return st;
+ if(Math.abs(vw/vh-d[0]/d[1])<.01&&Math.abs(vw-d[0])<16)return st;
+ const c=document.createElement('canvas');c.width=d[0];c.height=d[1];const g=c.getContext('2d');
+ const draw=()=>{const vw=v.videoWidth,vh=v.videoHeight;if(!vw)return;const k=Math.max(d[0]/vw,d[1]/vh),w=vw*k,h=vh*k;g.drawImage(v,(d[0]-w)/2,(d[1]-h)/2,w,h)};draw();rcT=setInterval(draw,33);
  const o=c.captureStream(30);st.getAudioTracks().forEach(t=>o.addTrack(t));return o}
+// Seitenverhältnis der Aufnahme: '9:16' … '16:9' oder 'orig' (Kamera unverändert)
+const ARS=[['9:16','Hoch'],['3:4','Hoch'],['4:5','Hoch'],['1:1','Quadrat'],['4:3','Quer'],['16:9','Quer'],['orig','Kamera']];
+let AR=ls.get('ar','9:16'),ARQ=+ls.get('arq',720);
+function arDims(){if(AR==='orig')return null;const[a,b]=AR.split(':').map(Number),q=ARQ,e=x=>Math.round(x/2)*2;return a<=b?[q,e(q*b/a)]:[e(q*a/b),q]}
+function setAR(x){x=String(x).toLowerCase().trim();const W={hoch:'9:16',hochformat:'9:16',quadrat:'1:1',quadratisch:'1:1',quer:'16:9',querformat:'16:9',original:'orig',kamera:'orig'};
+ const v=W[x]||x.replace(/\s*(zu|:|x|auf)\s*/,':').replace(/\s+/g,'');if(!ARS.some(a=>a[0]===v))return toast('Unbekanntes Format: '+x);
+ const land=a=>a!=='orig'&&+a.split(':')[0]>+a.split(':')[1],re=land(v)!==land(AR);AR=v;ls.set('ar',AR);renderAR();fitVideo();ui();toast('Format '+(v==='orig'?'Kamera':v));
+ if(re&&!rec){try{cam.srcObject&&cam.srcObject.getTracks().forEach(t=>t.stop())}catch(e){}camOK=false;initCam()}}
+function renderAR(){const el=$('#arSel');if(!el)return;el.innerHTML=ARS.map(([k,l])=>{const[a,b]=k==='orig'?[3,4]:k.split(':').map(Number),z=18/Math.max(a,b);return`<span class="${k===AR?'on':''}" data-ar="${k}"><i style="width:${Math.round(a*z)}px;height:${Math.round(b*z)}px${k==='orig'?';border-style:dashed':''}"></i>${k==='orig'?l:k}</span>`}).join('');$('#arQ').value=ARQ}
 function rcStop(){clearInterval(rcT);rcT=null}
 function fileName(c){const cl=s=>s.replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'').slice(0,40),d=new Date(c.date||Date.now()),p=n=>String(n).padStart(2,'0'),ds=d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes());
  const m=c.ctx.filter(x=>x.m).map(x=>cl((x.g?x.g+' ':'')+x.x)).filter(Boolean),o=c.ctx.filter(x=>!x.m).map(x=>cl((x.g?x.g+' ':'')+x.x)).filter(Boolean),base=c.merged?cl(c.title):([...m,...o].join('_').slice(0,80)||'clip');return base+'_'+ds+'_'+c.id+'.'+EXT(c.blob.type)}
 function flash(k){const st=$('#stage');st.querySelectorAll('.sweep').forEach(e=>e.remove());const sv=k==='save',d=lastDir;lastDir='';let dir,pos,bs;
  if(sv){if(d==='←'){dir='to top left';pos='100% 100%';bs='180% 180%'}else if(d==='→'){dir='to top right';pos='0% 100%';bs='180% 180%'}else{dir='to top';pos='50% 100%';bs='100% 180%'}}else{dir='to bottom';pos='50% 0%';bs='100% 180%'}
  const c=sv?'rgba(95,191,146,.62)':'rgba(229,115,115,.34)',e=document.createElement('div');e.className='sweep';e.style.cssText=`background-image:linear-gradient(${dir},${c},${c.replace(/[\d.]+\)$/,'0)')} 75%);background-position:${pos};--bs:${bs}`;st.appendChild(e);setTimeout(()=>e.remove(),1100)}
-function saveDirs(){try{db.transaction('c','readwrite').objectStore('c').put({id:'dirs',h:libDirs})}catch(e){}}
-async function addLib(){try{const h=await showDirectoryPicker({mode:'read'});libDirs.push(h);saveDirs();await scanLib(h)}catch(e){toast('Ordnerwahl hier nicht verfügbar')}}
-async function scanLib(h,depth=0,pre=''){let ix={};try{const f=await(await h.getFileHandle('index.json')).getFile();JSON.parse(await f.text()).forEach(r=>{if(r.file)(ix[r.file]=ix[r.file]||[]).push(r)})}catch(e){}
- try{for await(const[n,e]of h.entries()){if(e.kind==='directory'&&depth<2){await scanLib(e,depth+1,pre+n+'/');continue}
-  if(!/\.(mp4|webm|mov|m4v)$/i.test(n)||clips.some(c=>c.blob&&c.blob.fid===n))continue;const f=await e.getFile();
-  (ix[n]||[null]).forEach((r,k)=>{const key=h.name+'/'+pre+n+'#'+k;if(clips.some(c=>c.src===key))return;const t=n.replace(/\.[^.]+$/,'').replace(/_\d{8}-\d{4}.*$/,'').replace(/[_-]+/g,' ');
-   const c={id:N++,lib:1,src:key,title:r?r.title:t,date:r?r.date:f.lastModified,dur:r?r.dur:5,s:r?r.s||0:0,hue:Math.random()*360|0,ctx:r?r.ctx:[{t:0,m:1,x:t}],mk:r?r.mk||[]:[],url:URL.createObjectURL(f),blob:f};clips.push(c);
-   const v=document.createElement('video');v.preload='metadata';v.src=c.url;v.onloadedmetadata=()=>{if(!r)c.dur=v.duration||c.dur;genThumb(c);v.remove();render()}})}}catch(e){}render()}
-$('#bLib').onclick=addLib;
 function delLast(id){if(id==='mf'){const L=mainList(),i=L.map(x=>x.m).lastIndexOf(1);if(i>=0){const x=L.splice(i,1)[0];if(rec)rec.pre=rec.pre.filter(y=>y.x!==x.x)}}else if(id==='xf'){const L=rec?rec.ctx:carryX,i=L.map(x=>!x.m).lastIndexOf(true);if(i>=0)L.splice(i,1)}else if(id==='vw'){const c=cur();if(c&&c.ctx.length)c.ctx.pop()}else if(terms.length)rmTerm(terms.length-1);render()}
-async function shareCtx(id){const w=$('#'+id),txt=[...w.querySelectorAll('.ch:not(.off)')].map(c=>c.textContent.trim()).join(' · ');if(!txt)return toast('Kein Kontext');try{if(navigator.share)await navigator.share({title:'Kontext',text:txt});else{await navigator.clipboard.writeText(txt);toast('Kontext kopiert')}}catch(e){}if(dirH){try{await putFile('Kontext_'+Date.now()+'.txt',new Blob([txt],{type:'text/plain'}))}catch(e){}}}
+async function shareCtx(id){const w=$('#'+id),txt=[...w.querySelectorAll('.ch:not(.off)')].map(c=>c.textContent.trim()).join(' · ');if(!txt)return toast('Kein Kontext');try{if(navigator.share)await navigator.share({title:'Kontext',text:txt});else{await navigator.clipboard.writeText(txt);toast('Kontext kopiert')}}catch(e){}Store.putExtra('Kontext_'+Date.now()+'.txt',new Blob([txt],{type:'text/plain'}))}
 function addFav(t){if(!t||favs.some(f=>f.t===t))return;favs.push({t,on:false});ls.set('favs',favs.map(f=>({t:f.t,on:false})));renderFv();toast('Favorit: '+t)}
 function renderFv(){const el=$('#fv');el.style.display=mode==='search'&&favs.length?'flex':'none';el.innerHTML=favs.map((f,i)=>`<span class="ch ${f.on?'on':'off'}" data-i="${i}">${esc(f.t)}</span>`).join('')}
 function favApply(){const act=favs.filter(f=>f.on);
@@ -726,43 +743,22 @@ document.addEventListener('pointerdown',e=>{if(document.querySelector('.sheet.on
 const COMMIT={stopp:1,weiter:1,teilen:1,nochmal:0,nochmalNeu:0,neu:0};
 function commitDrafts(save){if(!clips.some(c=>c.draft))return;if(save){clips.forEach(c=>{if(c.draft)c.draft=0});saveAll(1)}else{clips=clips.filter(c=>!c.draft);pl=pl.filter(p=>!p.c.draft);render()}}
 // Video immer im Seitenverhältnis, mittig, Freiraum außen
-function fitVideo(){const st=$('#stage'),W=st.clientWidth,H=st.clientHeight;[cam,pv].forEach(v=>{const a=v.videoWidth,b=v.videoHeight;if(!a||!b||!W||!H){v.style.width='';v.style.height='';v.style.left='';v.style.top='';return}const r=a/b,w=Math.min(W,H*r),h=w/r;v.style.width=w+'px';v.style.height=h+'px';v.style.left=(W-w)/2+'px';v.style.top=(H-h)/2+'px'})}
+function fitVideo(){const st=$('#stage'),W=st.clientWidth,H=st.clientHeight,d=arDims();[cam,pv].forEach(v=>{const crop=v===cam&&d;v.style.setProperty('object-fit',crop?'cover':'contain','important');const a=crop?d[0]:v.videoWidth,b=crop?d[1]:v.videoHeight;if(!a||!b||!W||!H){v.style.width='';v.style.height='';v.style.left='';v.style.top='';return}const r=a/b,w=Math.min(W,H*r),h=w/r;v.style.width=w+'px';v.style.height=h+'px';v.style.left=(W-w)/2+'px';v.style.top=(H-h)/2+'px'})}
 try{new ResizeObserver(fitVideo).observe($('#stage'))}catch(e){}
 ['loadedmetadata','resize','playing'].forEach(ev=>{cam.addEventListener(ev,fitVideo);pv.addEventListener(ev,fitVideo)});addEventListener('resize',fitVideo);setInterval(fitVideo,1500);
 // WebDAV: Passwort verschlüsselt (WebCrypto, nicht auslesbarer Schlüssel), Prüfung, Abgleich
-let dkey=null,davS='';
+let dkey=null;
 const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))),ub64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
 async function getKey(){if(dkey)return dkey;dkey=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);try{db.transaction('c','readwrite').objectStore('c').put({id:'k',key:dkey})}catch(e){}return dkey}
 async function encPw(pw){const k=await getKey(),iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(pw));return b64(iv)+'.'+b64(ct)}
 async function decPw(t){const[i,c]=t.split('.');return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:ub64(i)},await getKey(),ub64(c)))}
-const davAuth=()=>({Authorization:'Basic '+btoa(unescape(encodeURIComponent($('#dUser').value+':'+$('#dPw').value)))});
-const davBase=()=>$('#dUrl').value.trim().replace(/\/?$/,'/');
-const davReq=(m,u,o={})=>fetch(u,{method:m,headers:{...davAuth(),...(o.h||{})},body:o.body});
-function setDav(t,q){davS=t;const e=$('#davS');if(e)e.textContent=t||'';if(t&&t!=='Verbunden'&&!q)toast(t)}
-async function davCheck(q){if(!$('#dUrl').value.trim()||!$('#dPw').value){setDav('',q);return false}
- try{const r=await davReq('PROPFIND',davBase(),{h:{Depth:'0'}});
-  if(r.status===401||r.status===403){setDav('Anmeldung abgelehnt: Benutzer und App-Passwort prüfen',q);return false}
-  if(r.status===404){setDav('Ordner nicht gefunden: Adresse prüfen',q);return false}
-  if(r.status===207||r.ok){setDav('Verbunden',q);davSync();return true}setDav('Fehler HTTP '+r.status,q);return false}
- catch(e){setDav('Keine Verbindung: Netz oder CORS (der Server muss diese App-Adresse erlauben)',q);return false}}
-async function davSync(){if(davSync.b)return;davSync.b=1;try{const u=davBase(),r=await davReq('PROPFIND',u,{h:{Depth:'1'},body:'<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:getlastmodified/><d:getcontentlength/><d:getetag/><d:resourcetype/></d:prop></d:propfind>'});
-  const doc=new DOMParser().parseFromString(await r.text(),'application/xml'),rs=[...doc.getElementsByTagNameNS('DAV:','response')],base=new URL(u),abs=h=>new URL(h,base).href,nm=h=>decodeURIComponent(h.split('/').filter(Boolean).pop()||'');
-  const files=rs.map(x=>{const g=t=>{const e=x.getElementsByTagNameNS('DAV:',t)[0];return e?e.textContent:''};return{href:g('href'),mod:g('getlastmodified'),etag:g('getetag'),dir:!!x.getElementsByTagNameNS('DAV:','collection').length}}).filter(f=>!f.dir);
-  const ix={},ixf=files.find(f=>nm(f.href)==='index.json');if(ixf){try{JSON.parse(await(await davReq('GET',abs(ixf.href))).text()).forEach(q=>{if(q.file)(ix[q.file]=ix[q.file]||[]).push(q)})}catch(e){}}
-  let add=0,chg=0;const vids=files.filter(f=>/\.(mp4|webm|mov|m4v)$/i.test(nm(f.href)));
-  vids.forEach(f=>{const n=nm(f.href);if(clips.some(c=>!c.remote&&c.blob&&c.blob.fid===n))return;
-   (ix[n]||[null]).forEach((q,k)=>{const key='dav:'+n+'#'+k,ex=clips.find(c=>c.src===key);
-    if(ex){if(ex.etag!==f.etag){ex.etag=f.etag;ex.url=null;ex.blob=null;ex.th=null;chg++}if(q){ex.ctx=q.ctx;ex.title=q.title}return}
-    const t=n.replace(/\.[^.]+$/,'').replace(/_\d{8}-\d{4}.*$/,'').replace(/[_-]+/g,' ');
-    clips.push({id:N++,lib:1,remote:1,src:key,href:abs(f.href),etag:f.etag,title:q?q.title:t,date:q?q.date:Date.parse(f.mod)||Date.now(),dur:q?q.dur:5,s:q?q.s||0:0,hue:Math.random()*360|0,ctx:q?q.ctx:[{t:0,m:1,x:t}],mk:q?q.mk||[]:[]});add++})});
-  const keep=new Set(vids.map(f=>'dav:'+nm(f.href)));const before=clips.length;clips=clips.filter(c=>!c.remote||keep.has(c.src.split('#')[0]));const del=before-clips.length;
-  if(add||chg||del){render();toast('Cloud: '+add+' neu, '+chg+' geändert, '+del+' entfernt')}}catch(e){}davSync.b=0}
-async function davFetch(c){const r=await davReq('GET',c.href);if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.blob();c.blob=b;c.url=URL.createObjectURL(b)}
-{const _p=play;play=function(i,off){const c=pl[i]&&pl[i].c;if(c&&c.remote&&!c.url){toast('Lade aus der Cloud …');davFetch(c).then(()=>_p(i,off)).catch(e=>toast('Laden fehlgeschlagen: '+e.message));return}return _p(i,off)}}
-async function davBoot(){for(let i=0;i<40&&!db;i++)await new Promise(r=>setTimeout(r,200));const e=ls.get('dpw','');if(e){try{$('#dPw').value=await decPw(e)}catch(x){}}davCheck(true)}
-['dUrl','dUser'].forEach(id=>$('#'+id).addEventListener('change',()=>{ls.set('cfg',{u:$('#dUrl').value,n:$('#dUser').value,f:$('#frz').value});davCheck()}));
-$('#dPw').addEventListener('change',async()=>{const v=$('#dPw').value;ls.set('dpw',v?await encPw(v):'');davCheck()});
-$('#bDav').onclick=()=>davCheck();
-setTimeout(davBoot,800);setInterval(()=>davCheck(true),300000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)davCheck(true)});
+// Cloud-Clips beim Abspielen nachladen
+{const _p=play;play=function(i,off){const c=pl[i]&&pl[i].c;if(c&&c.remote&&!c.url){toast('Lade aus der Cloud …');Store.fetchClip(c).then(()=>_p(i,off)).catch(e=>toast('Laden fehlgeschlagen: '+e.message));return}return _p(i,off)}}
+// Einstellungen: Speicherorte und Format
+$('#stor').addEventListener('click',e=>Store.onClick(e));$('#arSel').addEventListener('click',e=>{const b=e.target.closest('[data-ar]');if(b)setAR(b.dataset.ar)});
+$('#arQ').addEventListener('change',e=>{ARQ=+e.target.value;ls.set('arq',ARQ);toast('Auflösung '+ARQ)});
+renderAR();Store.renderSettings();setTimeout(()=>Store.boot(),800);
+setInterval(()=>Store.refresh(),300000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)Store.refresh()});addEventListener('online',()=>Store.flush(2));
+let flT=null;const _persist=persist;persist=function(){_persist();clearTimeout(flT);flT=setTimeout(()=>Store.flush(2),5000)};
 setLw(0);setMode('rec');initCam();listen();
 </script></body></html>
