@@ -217,7 +217,7 @@ async function propfind(path = "") {
 }
 async function mkcol(path) {
   try { await req("MKCOL", davRoot(acc) + "/" + encPath(path)); }
-  catch (e) { if (!/405/.test(e.message)) throw e; } // 405 = existiert schon
+  catch (e) { if (!/405/.test(e.message)) throw new Error(`Ordner „${path}“ anlegen: ${e.message}`); } // 405 = existiert schon
 }
 async function put(path, blob, type) {
   await req("PUT", davRoot(acc) + "/" + encPath(path), { headers: { "Content-Type": type || "application/octet-stream" }, body: blob });
@@ -308,6 +308,7 @@ $("#bSave").onclick = async () => {
   const meta = new Blob([JSON.stringify(recMeta, null, 2)], { type: "application/json" });
   for (const t of targets) {
     try {
+      await mkcol(t); // Zielordner anlegen, falls er fehlt (sonst antwortet die Nextcloud auf PUT mit 404)
       await put(`${t}/${name}_video.${ext}`, recBlob, recBlob.type);
       await put(`${t}/${name}_video.json`, meta, "application/json");
       log(`T2/T8 bestanden: gespeichert in „${t}“.`, "ok");
