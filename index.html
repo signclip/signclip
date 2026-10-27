@@ -360,7 +360,9 @@ $("#bShare").onclick = async () => {
   try {
     const r = await shareFolderToCloudId({ server: acc.server, user: acc.user, appPassword: acc.pw, folder, cloudId: fed });
     msg.className = "ok";
-    msg.textContent = `„${folder}“ ist an ${fed} freigegeben. Jetzt „Sciebo öffnen zum Annehmen“ → anmelden → Glocke → annehmen.`;
+    msg.textContent = r.already
+      ? `„${folder}“ war schon an ${fed} freigegeben. In Sciebo nachsehen; falls noch nicht angenommen: „Sciebo öffnen zum Annehmen“ → Glocke → annehmen.`
+      : `„${folder}“ ist an ${fed} freigegeben. Jetzt „Sciebo öffnen zum Annehmen“ → anmelden → Glocke → annehmen.`;
     log(`„${folder}“ an ${fed} freigegeben${r.id != null ? " (ID " + r.id + ")" : ""}.`, "ok");
   } catch (e) {
     msg.className = "err"; msg.textContent = "Teilen: " + e.message;
@@ -373,9 +375,13 @@ $("#bOpenLink").onclick = async () => {
   const l = $("#sLink").value.trim();
   if (!/^https:\/\/[^/]+\/(index\.php\/)?s\/[A-Za-z0-9]+/.test(l)) return log("Bitte einen Sciebo-Freigabelink einfügen (…/s/…).", "err");
   if (!acc) return log("Erst anmelden (Abschnitt 1) – dann ist deine Nextcloud-ID bekannt.", "err");
+  // Erst kopieren, dann öffnen: Die Zwischenablage geht nur, solange diese Seite den Fokus hat.
+  let copied = false;
+  try { await navigator.clipboard.writeText(ncId(acc)); copied = true; } catch {}
   window.open(l, "_blank", "noopener");
-  try { await navigator.clipboard.writeText(ncId(acc)); log(`Sciebo geöffnet. Deine Nextcloud-ID ${ncId(acc)} ist kopiert – bei „Zu deiner Nextcloud hinzufügen“ einfügen.`, "ok"); }
-  catch { log(`Sciebo geöffnet. Bei „Zu deiner Nextcloud hinzufügen“ eintragen: ${ncId(acc)}`, "ok"); }
+  log(copied
+    ? `Sciebo geöffnet. Deine Nextcloud-ID ${ncId(acc)} ist kopiert – bei „Zu deiner Nextcloud hinzufügen“ einfügen.`
+    : `Sciebo geöffnet. Bei „Zu deiner Nextcloud hinzufügen“ eintragen: ${ncId(acc)}`, "ok");
 };
 $("#bOpenNc").onclick = () => {
   if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");

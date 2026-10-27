@@ -57,3 +57,9 @@ test("Ohne Ordner oder mit ungültiger ID wird gar nicht erst gesendet", async (
   await assert.rejects(shareFolderToCloudId({ server: "https://x.de", user: "me", appPassword: "pw", folder: "S", cloudId: "kaputt", fetchImpl: f }), /Cloud-ID/);
   assert.equal(f.calls.length, 0);
 });
+
+test("Schon freigegeben gilt als Erfolg, nicht als Fehler", async () => {
+  const f = fakeFetch({ ocs: { meta: { status: "failure", statuscode: 403, message: "Sharing SignTest failed, because this item is already shared with the account a@b.de" } } }, false);
+  const r = await shareFolderToCloudId({ server: "https://nc.example.de", user: "me", appPassword: "pw", folder: "SignTest", cloudId: "a@b.de", fetchImpl: f });
+  assert.equal(r.already, true);
+});

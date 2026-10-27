@@ -58,7 +58,7 @@ function basicAuth(user, password) {
  * @param {number} [o.permissions=1]  Standard: nur lesen
  * @param {"webapppassword"|"ocs"} [o.via="webapppassword"]
  * @param {typeof fetch} [o.fetchImpl=fetch]  austauschbar (Tests, Capacitor)
- * @returns {Promise<{ id: string|number|null, raw: any }>}
+ * @returns {Promise<{ id: string|number|null, already: boolean, raw: any }>}  already = war schon freigegeben
  */
 export async function shareFolderToCloudId({
   server, user, appPassword, folder, cloudId,
@@ -94,8 +94,12 @@ export async function shareFolderToCloudId({
   const meta = raw && raw.ocs && raw.ocs.meta;
   if (!res.ok || (meta && meta.status !== "ok")) {
     const msg = (meta && meta.message) || `${res.status} ${res.statusText || ""}`.trim();
+    // Schon einmal an dieselbe ID freigegeben? Dann ist das Ziel erreicht – kein Fehler.
+    if (/already shared|bereits geteilt|bereits freigegeben/i.test(msg)) return { id: null, already: true, raw };
+    if (res.status === 401) throw new Error("Anmeldung abgelehnt (401). Mit normalem Passwort lässt die Nextcloud diese Schnittstelle evtl. nicht zu – App-Passwort versuchen.");
+    if (res.status === 403 && !meta) throw new Error("Zugriff verweigert (403). Bei WebAppPassword das Feld „Files sharing“ prüfen oder App-Passwort versuchen.");
     throw new Error(`Freigabe fehlgeschlagen: ${msg}`);
   }
   const data = raw && raw.ocs && raw.ocs.data;
-  return { id: data && data.id != null ? data.id : null, raw };
+  return { id: data && data.id != null ? data.id : null, already: false, raw };
 }
