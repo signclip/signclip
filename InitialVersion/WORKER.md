@@ -2,13 +2,13 @@
 
 Wozu: SignClip im Browser darf Sciebo/Nextcloud nur ansprechen, wenn der Server das erlaubt (CORS). Sciebo erlaubt es nicht. Der Worker reicht die Anfragen weiter und ergänzt die Erlaubnis. Mit der späteren App (Capacitor) wird er nicht mehr gebraucht.
 
-Code: [`tools/webdav-proxy.js`](../tools/webdav-proxy.js)
+Code: [`webdav-proxy.js`](webdav-proxy.js)
 
 ## Cloudflare (kostenlos, ca. 10 Minuten)
 
 1. **Konto:** auf dash.cloudflare.com registrieren (E-Mail bestätigen).
 2. **Worker anlegen:** links **Workers & Pages** › **Create** › **Create Worker** (Vorlage „Hello World“) › Name z. B. `signclip-dav` › **Deploy**.
-3. **Code einsetzen:** **Edit code** › alles löschen › Inhalt von `tools/webdav-proxy.js` einfügen › **Deploy**.
+3. **Code einsetzen:** **Edit code** › alles löschen › Inhalt von `webdav-proxy.js` einfügen › **Deploy**.
 4. **Erlaubnisse setzen:** im Worker **Settings** › **Variables and Secrets** › **Add**, Typ „Text“:
 
    | Name | Wert | Bedeutung |

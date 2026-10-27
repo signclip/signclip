@@ -1,6 +1,6 @@
 # Design
 
-Dieses Dokument trennt, was aus der ersten Version **gesetzt** ist, was **neu vorgeschlagen** wird und was **offen** bleibt. Quelle der gesetzten Regeln: [InitialVersion/READme.md](../InitialVersion/READme.md).
+Dieses Dokument trennt, was aus der ersten Version **gesetzt** ist, was **neu vorgeschlagen** wird und was **offen** bleibt. Quelle der gesetzten Regeln: [InitialVersion/READme.md](InitialVersion/READme.md).
 
 ## Gesetzt (aus der ersten Version übernommen)
 
@@ -38,7 +38,7 @@ Ein Bildschirm, alles Weitere öffnet sich als Schicht darüber. Auf dem Tablet 
 | Fuß | Aufnahme, Suchfeld über die volle Breite, Playlist-Kontext |
 | Rand | Filter für Länge und Datum, Favoriten |
 
-Die detaillierte Anordnung unten im Suchmodus steht in [InitialVersion/READme.md](../InitialVersion/READme.md), Abschnitt 7.3, und gilt als Ausgangspunkt.
+Die detaillierte Anordnung unten im Suchmodus steht in [InitialVersion/READme.md](InitialVersion/READme.md), Abschnitt 7.3, und gilt als Ausgangspunkt.
 
 ## Neu vorgeschlagen (noch nicht entschieden)
 

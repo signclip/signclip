@@ -44,4 +44,4 @@ Nicht im Neustart: Übersetzung von Gebärdensprache in Text als Produktversprec
 - Eine Begleitdatei je Video (`<video>.json`) funktioniert mit mehreren Personen im selben Ordner, weil niemand eine gemeinsame Indexdatei überschreibt.
 - Der größte Aufwand liegt in einer einzigen, stark verdichteten `index.html` mit globalen Variablen. Genau das soll der Neustart lösen.
 
-Details stehen in [InitialVersion/ARCHITECTURE.md](../InitialVersion/ARCHITECTURE.md).
+Details stehen in [InitialVersion/ARCHITECTURE.md](InitialVersion/ARCHITECTURE.md).

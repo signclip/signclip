@@ -19,7 +19,7 @@
 //   clips, N, render, toast, esc, ic, fileName, encPw, decPw, db, genThumb
 // =====================================================================
 const Store = (() => {
-  // Feste Worker-Adresse für alle (siehe docs/WORKER.md). Leer = kein Proxy.
+  // Feste Worker-Adresse für alle (siehe WORKER.md). Leer = kein Proxy.
   // Ein Proxy, der beim Speicherort eingetragen ist, hat Vorrang.
   const DEFAULT_PROXY = '';
   const LS = {
@@ -376,7 +376,7 @@ const Store = (() => {
       <input type="text" id="tUser" autocomplete="username" placeholder="Benutzer (nicht bei Freigabe-Link)" value="${esc(v.user || '')}">
       <input type="password" id="tPw" autocomplete="new-password" placeholder="${form.id ? 'Passwort – leer = unverändert' : 'App-Passwort oder Freigabe-Passwort'}">
       <input type="text" id="tName" placeholder="Name, z. B. DGS-Gruppe" value="${esc(v.name || '')}">
-      <details><summary>Proxy bei CORS-Fehler</summary><input type="text" id="tProxy" placeholder="https://dein-proxy.workers.dev/" value="${esc(v.proxy || '')}"><small class="mut">Vorlage: tools/webdav-proxy.js</small></details>
+      <details><summary>Proxy bei CORS-Fehler</summary><input type="text" id="tProxy" placeholder="https://dein-proxy.workers.dev/" value="${esc(v.proxy || '')}"><small class="mut">Vorlage: webdav-proxy.js</small></details>
       <small class="mut">Sciebo-Link: Ordner › Teilen › Link kopieren · Konto: https://HOCHSCHULE.sciebo.de/remote.php/webdav/ORDNER/</small>
       <small class="tg-g">${arr('← Speichern und prüfen · ↓ Abbrechen')}</small></div>`;
     el.innerHTML = rows + fm

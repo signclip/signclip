@@ -1,4 +1,4 @@
-// Tests als ausführbare Erklärung. Ausführen: node --test bausteine/freigabe-an-sciebo/freigabe.test.mjs
+// Tests als ausführbare Erklärung. Ausführen: node --test freigabe.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseCloudId, shareFolderToCloudId, PERMISSION } from "./freigabe.js";

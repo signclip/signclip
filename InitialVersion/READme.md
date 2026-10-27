@@ -259,7 +259,7 @@ Stand der Anordnung: teilweise (Felder vorhanden, Breite und Position noch nicht
 | S4 | Playlist als ein Video, Dateiname mit Suchkontext. | umgesetzt |
 | S5 | Teilen-Menü in fester Reihenfolge: **Teilen, Cloud-Speicherorte und Freigaben, Ordner**. Jeder Speicherort ist eine eigene Kachel und kann per Namen gesprochen werden. | umgesetzt |
 | S6 | Teilen-Menü einfach schließen (Tippen daneben oder nach unten wischen). | umgesetzt |
-| S7 | Cloud: Nextcloud/Sciebo per WebDAV und freigegebene Ordner per Link (Hochladen, Auflisten, Nachladen beim Abspielen). iCloud über das Teilen-Menü. CORS: Server muss die App erlauben, sonst Proxy (`tools/webdav-proxy.js`). | umgesetzt |
+| S7 | Cloud: Nextcloud/Sciebo per WebDAV und freigegebene Ordner per Link (Hochladen, Auflisten, Nachladen beim Abspielen). iCloud über das Teilen-Menü. CORS: Server muss die App erlauben, sonst Proxy (`webdav-proxy.js`). | umgesetzt |
 | S8 | Löschen: Wisch links = aus Playlist entfernen. Rotes Löschfeld = endgültig löschen. | umgesetzt |
 | S9 | Zusammenfügen läuft in Echtzeit auf dem Gerät und zeigt Fortschritt. | umgesetzt |
 

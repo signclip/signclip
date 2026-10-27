@@ -50,7 +50,7 @@ Rechenbeispiel zur Größenordnung (Annahme, nicht gemessen): 220 Personen, täg
 
 ## 5. Lehren aus der ersten Version
 
-Aus [InitialVersion/ARCHITECTURE.md](../InitialVersion/ARCHITECTURE.md) (bereits dort behoben oder festgehalten):
+Aus [InitialVersion/ARCHITECTURE.md](InitialVersion/ARCHITECTURE.md) (bereits dort behoben oder festgehalten):
 
 1. Bei MP4 liefert Chrome Daten erst beim Stoppen. Wer den Zustand vorher löscht, verliert den letzten Videoteil.
 2. Ein Service Worker darf Cloud-Anfragen nicht cachen, sonst kommen veraltete Videos und Indexe.

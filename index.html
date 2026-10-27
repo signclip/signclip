@@ -9,7 +9,7 @@
   Eine Seite, keine fremden Bibliotheken, keine Zugangsdaten im Code.
   Ablauf: mit benutzer@server und Passwort anmelden → quadratisch aufnehmen → in Nextcloud-Ordner speichern
           → Ordner mit Sciebo teilen (Sciebo öffnet sich zum Annehmen) bzw. Sciebo-Ordner in die Nextcloud holen.
-  Das föderierte Teilen kommt aus dem geprüften Baustein bausteine/freigabe-an-sciebo/.
+  Das föderierte Teilen kommt aus dem geprüften Baustein freigabe.js.
 -->
 <style>
   :root { --bg:#faf9f7; --fg:#222; --mut:#7a7873; --card:#fff; --line:#e6e3dd;
@@ -198,7 +198,7 @@
 </main>
 
 <script type="module">
-import { shareFolderToCloudId, parseCloudId, listShares, SHARE_TYPE } from "./bausteine/freigabe-an-sciebo/freigabe.js";
+import { shareFolderToCloudId, parseCloudId, listShares, SHARE_TYPE } from "./freigabe.js";
 
 // ───────────────────────── Hilfsfunktionen ─────────────────────────
 const $ = s => document.querySelector(s);

@@ -1,6 +1,6 @@
 # Architektur: Modelle und Module
 
-Ziel: wenige, klare Datenmodelle, die Jahrzehnte überdauern, und austauschbare Module darum herum. Die Komponentenkarte der ersten Version steht in [InitialVersion/ARCHITECTURE.md](../InitialVersion/ARCHITECTURE.md) und nennt 13 Bausteine, die in einer `index.html` über globale Variablen verbunden sind. Der Neustart trennt sie.
+Ziel: wenige, klare Datenmodelle, die Jahrzehnte überdauern, und austauschbare Module darum herum. Die Komponentenkarte der ersten Version steht in [InitialVersion/ARCHITECTURE.md](InitialVersion/ARCHITECTURE.md) und nennt 13 Bausteine, die in einer `index.html` über globale Variablen verbunden sind. Der Neustart trennt sie.
 
 ## Leitlinien
 

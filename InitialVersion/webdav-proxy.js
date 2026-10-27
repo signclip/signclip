@@ -5,7 +5,7 @@
 // Dieser Worker steht dazwischen und ergänzt die CORS-Antwort. Die App-Version mit
 // Capacitor (native App) braucht ihn nicht.
 //
-// Ausführliche Anleitung: docs/WORKER.md
+// Ausführliche Anleitung: WORKER.md
 //
 // Einrichten:
 //   1. dash.cloudflare.com › Workers › Create › diesen Code einfügen › Deploy

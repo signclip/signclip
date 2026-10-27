@@ -13,7 +13,7 @@ Tipp: einen **übergeordneten** Ordner teilen (z. B. „Sign“) – alles, was 
 | Datei | Inhalt |
 | --- | --- |
 | `freigabe.js` | Modul ohne Abhängigkeiten: `shareFolderToCloudId()`, `listShares()`, `parseCloudId()`, Konstanten für Freigabeart und Rechte |
-| `freigabe.test.mjs` | Tests als Erklärung; ausführen mit `node --test bausteine/freigabe-an-sciebo/freigabe.test.mjs` |
+| `freigabe.test.mjs` | Tests als Erklärung; ausführen mit `node --test freigabe.test.mjs` |
 
 ## Benutzung
 

@@ -18,6 +18,6 @@ WEBDAV (Nextcloud / Sciebo)
 - Der Browser sendet Anfragen von der App-Adresse an den Server (CORS). Der Server muss diese App-Adresse erlauben
   und die Header Authorization, Depth, Content-Type sowie die Methoden PROPFIND, PUT, GET, OPTIONS zulassen.
   Ohne diese Freigabe meldet die App: "Keine Verbindung: Netz oder CORS".
-  Ausweg ohne Server-Zugriff: tools/webdav-proxy.js als Cloudflare Worker. Anleitung: docs/WORKER.md
+  Ausweg ohne Server-Zugriff: webdav-proxy.js als Cloudflare Worker. Anleitung: WORKER.md
 - Das Passwort wird mit AES-GCM verschlüsselt auf dem Gerät gespeichert (nicht auslesbarer Schlüssel in IndexedDB).
   Das schützt vor dem Lesen im Klartext, nicht vor Schadcode in der App-Seite. Sicherer: Capacitor mit Keychain/Keystore.
