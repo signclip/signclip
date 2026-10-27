@@ -61,12 +61,13 @@ function basicAuth(user, password) {
  * @returns {Promise<{ id: string|number|null, already: boolean, raw: any }>}  already = war schon freigegeben
  */
 /**
- * Liest die bestehenden Freigaben eines Ordners (nur die eigenen).
+ * Liest die bestehenden eigenen Freigaben – eines Ordners, oder ohne `folder` alle.
  * @returns {Promise<Array<{ id: any, share_type: number, share_with: string }>>}
  */
 export async function listShares({ server, user, appPassword, folder, via = "webapppassword", fetchImpl = fetch }) {
-  const path = "/" + String(folder || "").trim().replace(/^\/+|\/+$/g, "");
-  const url = server.trim().replace(/\/+$/, "") + ENDPOINT[via] + "?format=json&reshares=false&path=" + encodeURIComponent(path);
+  const clean = String(folder || "").trim().replace(/^\/+|\/+$/g, "");
+  // ohne Ordner: alle eigenen Freigaben
+  const url = server.trim().replace(/\/+$/, "") + ENDPOINT[via] + "?format=json&reshares=false" + (clean ? "&path=" + encodeURIComponent("/" + clean) : "");
   const res = await fetchImpl(url, {
     method: "GET",
     headers: { Authorization: basicAuth(user, appPassword), "OCS-APIRequest": "true", Accept: "application/json" },
