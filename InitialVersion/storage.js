@@ -313,19 +313,27 @@ const Store = (() => {
     const first = list().find(x => { const k = ncInfo(x); return k && k.root === i.root && (x.user || '') === (t.user || '') });
     if (first && first.id !== t.id) { delete FOUND[t.id]; return }
     const PF2 = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:" xmlns:nc="http://nextcloud.org/ns" xmlns:oc="http://owncloud.org/ns"><d:prop><d:resourcetype/><nc:mount-type/><oc:share-types/></d:prop></d:propfind>';
-    try {
-      const r = await req(t, 'PROPFIND', i.root, { h: { Depth: '1', 'Content-Type': 'application/xml' }, body: PF2 });
-      if (r.status !== 207) return;
-      const doc = new DOMParser().parseFromString(await r.text(), 'application/xml'), base = new URL(i.root);
-      const have = new Set(list().map(x => ep(x)));
-      const all = [...doc.getElementsByTagNameNS('DAV:', 'response')].map(x => {
-        const href = (x.getElementsByTagNameNS('DAV:', 'href')[0] || {}).textContent || '', url = new URL(href, base).href.replace(/\/?$/, '/');
+    const dirs = async url => {
+      const r = await req(t, 'PROPFIND', url, { h: { Depth: '1', 'Content-Type': 'application/xml' }, body: PF2 });
+      if (r.status !== 207) return [];
+      const doc = new DOMParser().parseFromString(await r.text(), 'application/xml'), base = new URL(url);
+      return [...doc.getElementsByTagNameNS('DAV:', 'response')].map(x => {
+        const href = (x.getElementsByTagNameNS('DAV:', 'href')[0] || {}).textContent || '', u = new URL(href, base).href.replace(/\/?$/, '/');
         const mt = ((x.getElementsByTagNameNS('http://nextcloud.org/ns', 'mount-type')[0] || {}).textContent || '').trim();
-        return { url, name: decodeURIComponent(url.split('/').filter(Boolean).pop() || ''), type: NCT[mt] || 'Ordner', special: !!NCT[mt], dir: !!x.getElementsByTagNameNS('DAV:', 'collection').length };
-      }).filter(f => f.dir && f.url !== base.href);
+        return { url: u, name: decodeURIComponent(u.split('/').filter(Boolean).pop() || ''), mt, type: NCT[mt] || 'Ordner', special: !!NCT[mt], dir: !!x.getElementsByTagNameNS('DAV:', 'collection').length };
+      }).filter(f => f.dir && f.url !== base.href.replace(/\/?$/, '/'));
+    };
+    try {
+      const all = await dirs(i.root);
+      // In eingebundene Konten (z. B. ganzes Sciebo-Konto) eine Ebene hineinschauen:
+      // dort liegen z. B. Ordner, die andere in Sciebo mit dir geteilt haben (Annahme-Link …/accept/ocinternal:…)
+      for (const m of all.filter(f => /^external/.test(f.mt))) {
+        try { (await dirs(m.url)).slice(0, 6).forEach(c => all.push({ ...c, name: m.name + ' › ' + c.name, type: 'In ' + m.name, special: true })) } catch (e) {}
+      }
+      const have = new Set(list().map(x => ep(x)));
       const anySpecial = all.some(f => f.special), open = all.filter(f => !have.has(f.url) && !HIDE.has(f.url));
-      // besondere Ordner (Gruppe, eingebunden, geteilt) immer vorschlagen; normale nur, wenn es keine besonderen gibt und es wenige sind
-      FOUND[t.id] = (anySpecial ? open.filter(f => f.special) : open.length <= 4 ? open : []).slice(0, 8);
+      // besondere Ordner (Gruppe, eingebunden, geteilt, darin) immer vorschlagen; normale nur, wenn es keine besonderen gibt und es wenige sind
+      FOUND[t.id] = (anySpecial ? open.filter(f => f.special) : open.length <= 4 ? open : []).slice(0, 10);
       renderSettings();
     } catch (e) {}
   }
@@ -447,7 +455,7 @@ const Store = (() => {
     const rows = list().map(t => `<div class="tg-row${t.auto ? ' auto' : ''}" data-t="${t.id}">
       <div class="tg-h"><span>${ic(icon(t), 20)}</span><b>${esc(t.name)}</b><em>${t.auto ? 'Immer speichern' : 'Im Teilen-Menü'}</em><small>${esc(KIND[t.kind])} · ${esc(short(t))}</small></div>
       <div class="tg-s ${/^(Verbunden|Bereit)/.test(ST[t.id] || '') ? 'ok' : ''}">${esc(ST[t.id] || (booted ? 'Nicht geprüft' : 'Lädt …'))}</div></div>`
-      + (FOUND[t.id] || []).map((f, k) => `<div class="tg-row tg-sug" data-s="${t.id}|${k}"><div class="tg-h"><span>${ic(/Eingebunden/.test(f.type) ? 'folder_shared' : 'folder', 18)}</span><b>${esc(f.name)}</b><em>${esc(f.type)}</em><small>${arr('in ' + esc(t.name) + ' gefunden · ← immer speichern · ↑ Teilen-Menü · ↓ ausblenden')}</small></div></div>`).join('')).join('');
+      + (FOUND[t.id] || []).map((f, k) => `<div class="tg-row tg-sug" data-s="${t.id}|${k}"><div class="tg-h"><span>${ic(/Eingebunden|^In /.test(f.type) ? 'folder_shared' : 'folder', 18)}</span><b>${esc(f.name)}</b><em>${esc(f.type)}</em><small>${arr('in ' + esc(t.name) + ' gefunden · ← immer speichern · ↑ Teilen-Menü · ↓ ausblenden')}</small></div></div>`).join('')).join('');
     const v = form && form.id ? get(form.id) || {} : {};
     const fm = !form ? '' : `<div class="tg-row tg-f" data-f="1">
       <b>${form.id ? 'Speicherort ändern' : 'Neuer Speicherort'}</b>
