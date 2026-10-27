@@ -103,6 +103,8 @@
     <button id="bCopyFed">Adresse kopieren</button>
     <button id="bOpenSciebo">Sciebo-Seite öffnen</button>
     <p class="mut">Schritt 2: zurückkommen und annehmen.</p>
+    <label><input type="checkbox" id="autoAcc"> Freigaben von diesen Servern automatisch annehmen (braucht den Verwaltungshelfer)</label>
+    <input type="text" id="autoHosts" value="uni-koeln.sciebo.de">
     <button id="bPending">Ausstehende Freigaben laden</button>
     <div id="pending"></div>
     <button id="bRemote">Eingebundene Freigaben anzeigen</button>
@@ -245,6 +247,7 @@ $("#bConnect").onclick = async () => {
     $("#pw").value = "";
     showWho();
     log(`T1 bestanden: Verbindung ok, ${items.length} Einträge im Hauptordner.`, "ok");
+    autoAccept(false);
   } catch (e) { acc = null; showWho(); log("T1/T3 nicht bestanden: " + e.message, "err"); }
 };
 $("#helper").onchange = () => {
@@ -382,6 +385,30 @@ $("#bPending").onclick = async () => {
     }
   } catch (e) { log("Freigaben laden: " + e.message, "err"); }
 };
+// Automatisch annehmen: nur Freigaben von Servern aus der Liste, nur solange die App offen ist.
+function autoSettings() {
+  try { return { on: localStorage.getItem("autoAcc") === "1", hosts: (localStorage.getItem("autoHosts") || "uni-koeln.sciebo.de").split(/[\s,]+/).filter(Boolean) }; }
+  catch { return { on: false, hosts: [] }; }
+}
+async function autoAccept(quiet = true) {
+  const st = autoSettings();
+  if (!acc || !st.on) return;
+  if (!getHelper()) { if (!quiet) log("Automatisch annehmen braucht den Verwaltungshelfer (Abschnitt 1).", "err"); return; }
+  try {
+    const list = await ocs("GET", FED + "/pending");
+    for (const s of list) {
+      const host = (s.remote || "").replace(/^https?:\/\//, "").replace(/\/.*$/, "").toLowerCase();
+      if (!st.hosts.some(h => host === h.toLowerCase())) continue; // fremde Server nie automatisch
+      await ocs("POST", `${FED}/pending/${s.id}`);
+      log(`Automatisch angenommen: „${s.name}“ von ${s.owner}@${host}. In Abschnitt 3 „Ordner laden“.`, "ok");
+    }
+    if (!quiet && !list.length) log("Keine ausstehenden Freigaben.");
+  } catch (e) { if (!quiet) log("Automatisch annehmen: " + e.message, "err"); }
+}
+$("#autoAcc").onchange = () => { try { localStorage.setItem("autoAcc", $("#autoAcc").checked ? "1" : "0"); } catch {} autoAccept(false); };
+$("#autoHosts").onchange = () => { try { localStorage.setItem("autoHosts", $("#autoHosts").value.trim()); } catch {} };
+setInterval(() => autoAccept(true), 60000); // jede Minute prüfen, solange die Seite offen ist
+
 $("#bRemote").onclick = async () => {
   try {
     const list = await ocs("GET", FED);
@@ -504,6 +531,8 @@ async function handleJoin() {
   if (!(await handleJoin())) { acc = loadAcc(); }
   if (acc) { $("#srv").value = acc.server; $("#usr").value = acc.user; }
   $("#helper").value = getHelper();
+  { const st = autoSettings(); $("#autoAcc").checked = st.on; $("#autoHosts").value = st.hosts.join(", "); }
+  autoAccept(false);
   showWho();
   if (!window.isSecureContext) log("Achtung: Seite läuft nicht über https – Kamera und Krypto sind gesperrt.", "err");
 })();

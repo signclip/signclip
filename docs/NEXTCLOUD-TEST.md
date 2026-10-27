@@ -89,6 +89,7 @@ Die Nextcloud-Adresse steht damit nur in den Cloudflare-Einstellungen, nicht im 
 | 4 · Sciebo | Mit einem Klick einbinden | Sciebo-Link wird Ordner in deiner Nextcloud → in 3 anhaken → Aufnahmen gehen nach Sciebo |
 | 4 · Sciebo | In Sciebo sichtbar machen | Nextcloud-Ordner wird an deine Sciebo-Adresse freigegeben (nur Lesen) → in Sciebo über die Glocke annehmen |
 | 4 · Sciebo | Ausstehende Freigaben laden → Annehmen | Sciebo-Freigaben in deiner Nextcloud annehmen |
+| 4 · Sciebo | „automatisch annehmen“ anhaken | Freigaben von `uni-koeln.sciebo.de` werden beim Öffnen der App und jede Minute angenommen – Freigaben anderer Server nie |
 
 **Abschalten:** Helfer-Adresse in der App leeren, oder in Cloudflare den Worker löschen. Dein App-Passwort in der Nextcloud widerrufen, wenn du sicher gehen willst.
 
