@@ -31,6 +31,13 @@ Neuester Eintrag steht oben. Jeder Chat in diesem Projekt ergänzt hier nach ein
 
 ## Einträge
 
+### 2026-10-28 · [T] Etappenplan und Ordner im Repo
+- Komponente: Repo signclip/signclip, ETAPPEN.md neu; Ordnerstruktur
+- Geändert: ETAPPEN.md mit vier Etappen, eigener SL2T-Welle (eigene Einwilligung), Ressourcenpunkt je Etappe; in Etappe 1 keine Anträge
+- Geändert: alles außer InitialVersion/ liegt flach auf einer Ebene (git mv, Verlauf bleibt erhalten); Baustein-Dateien freigabe.js, freigabe.test.mjs, FREIGABE-AN-SCIEBO.md im Hauptordner, Import in index.html angepasst
+- Offen: Projektdokumente (architektur, infrastructure, research) ins Repo übernehmen und die überholten ARCHITECTURE.md und RESEARCH.md ersetzen – wartet auf Antwort
+- Offen: Satz zu Etappe 4 war abgebrochen
+
 ### 2026-10-28 · [S] Verlauf auf GitHub
 - Erledigt: Projektanweisung gesetzt, damit jeder Chat automatisch in den Verlauf einträgt
 - Erledigt: Verlauf als VERLAUF.md ins Repo signclip/signclip gelegt; das Wochen-Update hält Projekt und Repo gleich
