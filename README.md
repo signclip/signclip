@@ -19,6 +19,12 @@ Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärde
 | [docs/RESEARCH.md](docs/RESEARCH.md) | Forschungsfragen, Annahmen, was noch zu prüfen ist |
 | [docs/NEXTCLOUD-TEST.md](docs/NEXTCLOUD-TEST.md) | Vorübergehend: Anleitung zur Nextcloud-Test-App im Hauptordner |
 
+## Bausteine (geprüft, für die endgültige Version)
+
+| Baustein | Was | Status |
+| --- | --- | --- |
+| [bausteine/freigabe-an-sciebo](bausteine/freigabe-an-sciebo/) | Nextcloud-Ordner per föderiertem Teilen in Sciebo sichtbar machen | im Test erfolgreich (27.10.2026) |
+
 ## Erste Version (`InitialVersion/`)
 
 Eine PWA ohne Build-Schritt: `index.html`, `storage.js`, Service Worker, WebDAV-Proxy. Aufnehmen, Kontext vergeben, suchen, schneiden, zusammenfügen und per Ordner, Nextcloud/Sciebo oder Freigabelink speichern. Die Konzeptdokumente der ersten Version liegen im selben Ordner ([READme.md](InitialVersion/READme.md), [ARCHITECTURE.md](InitialVersion/ARCHITECTURE.md)).

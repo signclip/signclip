@@ -1,0 +1,59 @@
+// Tests als ausführbare Erklärung. Ausführen: node --test bausteine/freigabe-an-sciebo/freigabe.test.mjs
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { parseCloudId, shareFolderToCloudId, PERMISSION } from "./freigabe.js";
+
+test("Cloud-ID mit zwei @: Benutzer ist alles vor dem letzten @", () => {
+  assert.deepEqual(parseCloudId("name@uni-koeln.de@uni-koeln.sciebo.de"), { user: "name@uni-koeln.de", server: "uni-koeln.sciebo.de" });
+});
+
+test("Cloud-ID ohne Server oder mit Leerzeichen ist ungültig", () => {
+  assert.equal(parseCloudId("name"), null);
+  assert.equal(parseCloudId("name@"), null);
+  assert.equal(parseCloudId("na me@uni-koeln.sciebo.de"), null);
+});
+
+function fakeFetch(answer = { ocs: { meta: { status: "ok" }, data: { id: 42 } } }, ok = true) {
+  const calls = [];
+  const f = async (url, opts) => { calls.push({ url, opts }); return { ok, status: ok ? 200 : 403, statusText: "", json: async () => answer }; };
+  f.calls = calls;
+  return f;
+}
+
+test("Browser-Weg schickt eine föderierte Freigabe (Typ 6), nur lesen, an WebAppPassword", async () => {
+  const f = fakeFetch();
+  const r = await shareFolderToCloudId({
+    server: "https://nc.example.de/", user: "me", appPassword: "pw", folder: "/Sign/",
+    cloudId: "name@uni-koeln.de@uni-koeln.sciebo.de", fetchImpl: f,
+  });
+  assert.equal(r.id, 42);
+  const { url, opts } = f.calls[0];
+  assert.equal(url, "https://nc.example.de/index.php/apps/webapppassword/api/v1/shares?format=json");
+  const body = new URLSearchParams(opts.body);
+  assert.equal(body.get("path"), "/Sign");
+  assert.equal(body.get("shareType"), "6");
+  assert.equal(body.get("permissions"), String(PERMISSION.read));
+  assert.equal(body.get("shareWith"), "name@uni-koeln.de@uni-koeln.sciebo.de");
+  assert.equal(opts.headers["OCS-APIRequest"], "true");
+});
+
+test("Handy-App-Weg nutzt die normale Nextcloud-Schnittstelle mit gleichen Parametern", async () => {
+  const f = fakeFetch();
+  await shareFolderToCloudId({ server: "https://nc.example.de", user: "me", appPassword: "pw", folder: "Sign", cloudId: "a@b.de", via: "ocs", fetchImpl: f });
+  assert.equal(f.calls[0].url, "https://nc.example.de/ocs/v2.php/apps/files_sharing/api/v1/shares?format=json");
+});
+
+test("Fehlermeldung der Nextcloud wird weitergegeben", async () => {
+  const f = fakeFetch({ ocs: { meta: { status: "failure", statuscode: 404, message: "Sharing failed" } } }, false);
+  await assert.rejects(
+    shareFolderToCloudId({ server: "https://nc.example.de", user: "me", appPassword: "pw", folder: "Sign", cloudId: "a@b.de", fetchImpl: f }),
+    /Sharing failed/
+  );
+});
+
+test("Ohne Ordner oder mit ungültiger ID wird gar nicht erst gesendet", async () => {
+  const f = fakeFetch();
+  await assert.rejects(shareFolderToCloudId({ server: "https://x.de", user: "me", appPassword: "pw", folder: "", cloudId: "a@b.de", fetchImpl: f }), /Ordner/);
+  await assert.rejects(shareFolderToCloudId({ server: "https://x.de", user: "me", appPassword: "pw", folder: "S", cloudId: "kaputt", fetchImpl: f }), /Cloud-ID/);
+  assert.equal(f.calls.length, 0);
+});
