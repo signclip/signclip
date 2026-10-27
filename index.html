@@ -110,7 +110,7 @@
     <ol class="mut">
       <li><b>Teilen</b>: Die App gibt den Ordner an deine Sciebo-ID frei (nur lesen).</li>
       <li><b>Sciebo öffnen zum Annehmen</b>: Sciebo öffnet sich in einem neuen Tab → dort anmelden.</li>
-      <li>Oben auf die <b>Glocke</b> → Freigabe <b>annehmen</b>. Fertig – alles in diesem Ordner erscheint ab jetzt in Sciebo.</li>
+      <li>Es öffnet sich direkt <b>„Ausstehende Freigaben“</b> → <b>annehmen</b> (oder oben über die Glocke). Fertig – alles in diesem Ordner erscheint ab jetzt in Sciebo.</li>
     </ol>
 
     <h3>4b · Sciebo-Ordner in die Nextcloud holen (zum Hineinspeichern)</h3>
@@ -346,7 +346,7 @@ $("#sFolder").onchange = () => store.set("shareFolder", $("#sFolder").value);
 // Link „Sciebo öffnen“ ist ein echter Link: Der Browser öffnet ihn beim Tippen zuverlässig (kein Pop-up-Blocker).
 function updateScieboLink() {
   const t = parseCloudId($("#sFed").value.trim()), a = $("#aSciebo");
-  if (t) { a.href = `https://${t.server}/index.php/apps/files/`; a.setAttribute("aria-disabled", "false"); }
+  if (t) { a.href = `https://${t.server}/index.php/apps/files/pendingshares`; a.setAttribute("aria-disabled", "false"); } // Ansicht „Ausstehende Freigaben“
   else { a.href = "#"; a.setAttribute("aria-disabled", "true"); }
 }
 $("#sFed").oninput = updateScieboLink;
@@ -385,8 +385,8 @@ $("#bOpenLink").onclick = async () => {
 };
 $("#bOpenNc").onclick = () => {
   if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
-  window.open(`${acc.server}/index.php/apps/files/`, "_blank", "noopener");
-  log("Nextcloud geöffnet: oben auf die Glocke → annehmen. Danach hier unter 3 „Ordner laden“.");
+  window.open(`${acc.server}/index.php/apps/files/pendingshares`, "_blank", "noopener"); // Ansicht „Ausstehende Freigaben“
+  log("Nextcloud geöffnet bei „Ausstehende Freigaben“ → annehmen (oder oben über die Glocke). Danach hier unter 3 „Ordner laden“.");
 };
 
 // ───────────────────────── Start ─────────────────────────
