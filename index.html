@@ -96,7 +96,24 @@
       </select>
       <input type="color" id="bgColor" value="#2f6f4f" style="width:52px;height:40px;border:0;background:none">
     </div>
-    <label><input type="checkbox" id="bgDefer"> Original speichern, Hintergrund erst später anwenden (empfohlen)</label>
+    <div class="row" style="margin-top:8px">
+      <select id="fShape" style="flex:1" aria-label="Fokus-Form">
+        <option value="none">Fokus: aus</option>
+        <option value="circle">Fokus: Kreis</option>
+        <option value="rounded">Fokus: Rechteck, abgerundet</option>
+        <option value="ellipse">Fokus: Ellipse (hochkant)</option>
+      </select>
+      <select id="fOut" style="flex:1" aria-label="Außerhalb des Fokus">
+        <option value="dim">außen abdunkeln</option>
+        <option value="black">außen schwarz</option>
+        <option value="bg">außen Hintergrundfarbe</option>
+      </select>
+    </div>
+    <label>Fokus-Größe <span id="fSizeV"></span>
+      <input type="range" id="fSize" min="40" max="100" step="1" style="width:100%"></label>
+    <label>Fokus-Höhe (nach oben / unten) <span id="fYV"></span>
+      <input type="range" id="fY" min="-25" max="25" step="1" style="width:100%"></label>
+    <label><input type="checkbox" id="bgDefer"> Original speichern, Hintergrund und Fokus erst später anwenden (empfohlen)</label>
     <label><input type="checkbox" id="bgHands"> Hände schützen – Finger werden nie zum Hintergrund</label>
     <p class="mut" id="bgInfo">Hintergrund-Erkennung läuft auf dem Gerät (MediaPipe), nichts wird hochgeladen. Beim ersten Mal werden ca. 1–2 MB geladen.</p>
     <button id="bCam">Kamera an</button>
@@ -313,6 +330,8 @@ const SEG_MODEL = "https://storage.googleapis.com/mediapipe-models/image_segment
 let bgMode = store.get("bgMode", "orig"), bgColor = store.get("bgColor", "#2f6f4f");
 let segmenter = null, hands = null, segLoading = false, lastTs = 0;
 let bgDefer = store.get("bgDefer", "1") === "1", bgHands = store.get("bgHands", "1") === "1";
+let fShape = store.get("fShape", "none"), fOut = store.get("fOut", "dim");
+let fSize = Number(store.get("fSize", "88")), fY = Number(store.get("fY", "0"));
 let prevA = null; // Maske des vorigen Bildes (zeitliche Glättung)
 const HAND_MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 // Verbindungen der 21 Handpunkte (Handgelenk 0, Daumen 1–4, Zeigefinger 5–8, Mittelfinger 9–12, Ring 13–16, kleiner Finger 17–20)
@@ -389,6 +408,37 @@ $("#bgDefer").checked = bgDefer; $("#bgHands").checked = bgHands;
 $("#bgDefer").onchange = () => { bgDefer = $("#bgDefer").checked; store.set("bgDefer", bgDefer ? "1" : "0"); };
 $("#bgHands").onchange = () => { bgHands = $("#bgHands").checked; store.set("bgHands", bgHands ? "1" : "0"); };
 
+// Fokus-Rahmen: Form in der Mitte bleibt, außen wird abgedunkelt/eingefärbt.
+// Größe in % der Bildbreite, Höhe verschiebt die Mitte nach oben (−) oder unten (+).
+function focusPath(c) {
+  const d = SIZE * fSize / 100, cx = SIZE / 2, cy = SIZE / 2 + SIZE * fY / 100;
+  c.beginPath();
+  if (fShape === "circle") c.arc(cx, cy, d / 2, 0, Math.PI * 2);
+  else if (fShape === "ellipse") c.ellipse(cx, cy, d * 0.39, d / 2, 0, 0, Math.PI * 2);
+  else {                                                   // Rechteck mit abgerundeten Ecken (4:5, hochkant)
+    const w = d * 0.8, h = d, x = cx - w / 2, y = cy - h / 2, r = d * 0.14;
+    c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+}
+function focusColor() {
+  return fOut === "black" ? "#000" : fOut === "bg" ? (bgMode === "neutral" ? NEUTRAL : bgColor) : "rgba(0,0,0,.55)";
+}
+function applyFocus() {
+  if (fShape === "none") return;
+  ctx.save();
+  focusPath(ctx); ctx.rect(SIZE, 0, -SIZE, SIZE);          // Gegenrichtung = Loch in der Mitte
+  ctx.fillStyle = focusColor(); ctx.fill("evenodd");
+  focusPath(ctx); ctx.lineWidth = 3; ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.stroke();
+  ctx.restore();
+}
+function showFocusValues() { $("#fSizeV").textContent = fSize + " %"; $("#fYV").textContent = (fY > 0 ? "+" : "") + fY; }
+$("#fShape").value = fShape; $("#fOut").value = fOut; $("#fSize").value = fSize; $("#fY").value = fY; showFocusValues();
+$("#fShape").onchange = () => { fShape = $("#fShape").value; store.set("fShape", fShape); };
+$("#fOut").onchange = () => { fOut = $("#fOut").value; store.set("fOut", fOut); };
+$("#fSize").oninput = () => { fSize = Number($("#fSize").value); store.set("fSize", String(fSize)); showFocusValues(); };
+$("#fY").oninput = () => { fY = Number($("#fY").value); store.set("fY", String(fY)); showFocusValues(); };
+
 function drawLoop() {
   const w = cam.videoWidth, h = cam.videoHeight;
   if (w && h) {
@@ -409,6 +459,7 @@ function drawLoop() {
         } catch (e) { /* einzelnes Bild übersprungen */ }
       }
     }
+    applyFocus();
   }
   requestAnimationFrame(drawLoop);
 }
@@ -432,9 +483,10 @@ function pickType() {
 }
 $("#bStart").onclick = () => {
   if (!cv.captureStream) return log("Dieser Browser kann die quadratische Aufnahme nicht (captureStream fehlt).", "err");
-  // Aufgenommen wird entweder das Original (Hintergrund kommt später) oder das bearbeitete Bild.
-  const deferBg = bgMode !== "orig" && bgDefer;
-  const out = (deferBg || bgMode === "orig" ? raw : cv).captureStream(30);
+  // Aufgenommen wird entweder das Original (Hintergrund und Fokus kommen später) oder das bearbeitete Bild.
+  const effects = (bgMode !== "orig" && segmenter) || fShape !== "none";
+  const deferBg = bgDefer;
+  const out = (!effects || bgDefer ? raw : cv).captureStream(30);
   stream.getAudioTracks().forEach(t => out.addTrack(t));
   const type = pickType();
   if (!type.startsWith("video/mp4")) log("Dieser Browser kann nicht als MP4 aufnehmen – es wird WebM gespeichert. Für MP4 Safari oder ein aktuelles Chrome/Edge nutzen.", "err");
@@ -460,7 +512,14 @@ $("#bStart").onclick = () => {
           applied: !deferBg,              // false: Video ist Original, Hintergrund ist nur gewünscht → Endversion später berechnen
           handsProtected: !!(bgHands && hands),
           model: "mediapipe-selfie_segmenter" + (bgHands && hands ? "+hand_landmarker" : "") + "@tasks-vision-0.10.14",
-        }
+        },
+    // Fokus-Rahmen in Anteilen der Bildbreite (0–1), damit die Endversion ihn genau nachzeichnen kann
+    focus: fShape === "none" ? { shape: "none" } : {
+      shape: fShape, size: fSize / 100, centerY: 0.5 + fY / 100,
+      aspect: fShape === "circle" ? 1 : 0.78, cornerRadius: fShape === "rounded" ? 0.14 : null,
+      outside: fOut, color: fOut === "dim" ? "rgba(0,0,0,0.55)" : focusColor(),
+      applied: !bgDefer,
+    }
   };
   recorder.start(1000);
   $("#time").hidden = false;
