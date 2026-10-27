@@ -418,7 +418,7 @@ $("#sFolder").onchange = () => store.set("shareFolder", $("#sFolder").value);
 // Link „Sciebo öffnen“ ist ein echter Link: Der Browser öffnet ihn beim Tippen zuverlässig (kein Pop-up-Blocker).
 function updateScieboLink() {
   const t = parseCloudId($("#sFed").value.trim()), a = $("#aSciebo");
-  if (t) { a.href = `https://${t.server}/index.php/apps/files/pendingshares`; a.setAttribute("aria-disabled", "false"); } // Ansicht „Ausstehende Freigaben“
+  if (t) { a.href = `https://${t.server}/apps/files/pendingshares`; a.setAttribute("aria-disabled", "false"); } // Ansicht „Ausstehende Freigaben“
   else { a.href = "#"; a.setAttribute("aria-disabled", "true"); }
 }
 $("#sFed").oninput = updateScieboLink;
@@ -476,7 +476,7 @@ $("#bOpenLink").onclick = async () => {
 };
 $("#bOpenNc").onclick = () => {
   if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
-  window.open(`${acc.server}/index.php/apps/files/pendingshares`, "_blank", "noopener"); // Ansicht „Ausstehende Freigaben“
+  window.open(`${acc.server}/apps/files/pendingshares`, "_blank", "noopener"); // Ansicht „Ausstehende Freigaben“
   log("Nextcloud geöffnet bei „Ausstehende Freigaben“ → annehmen (oder oben über die Glocke). Danach hier unter 3 „Ordner laden“.");
 };
 
