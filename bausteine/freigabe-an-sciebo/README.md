@@ -12,7 +12,7 @@ Tipp: einen **übergeordneten** Ordner teilen (z. B. „Sign“) – alles, was 
 
 | Datei | Inhalt |
 | --- | --- |
-| `freigabe.js` | Modul ohne Abhängigkeiten: `shareFolderToCloudId()`, `parseCloudId()`, Konstanten für Freigabeart und Rechte |
+| `freigabe.js` | Modul ohne Abhängigkeiten: `shareFolderToCloudId()`, `listShares()`, `parseCloudId()`, Konstanten für Freigabeart und Rechte |
 | `freigabe.test.mjs` | Tests als Erklärung; ausführen mit `node --test bausteine/freigabe-an-sciebo/freigabe.test.mjs` |
 
 ## Benutzung
@@ -37,6 +37,8 @@ await shareFolderToCloudId({
 | Empfänger (Sciebo) | Freigabe einmal über die Glocke annehmen |
 
 ## Wie es funktioniert
+
+0. Vorher prüft der Baustein, ob der Ordner schon an diese ID freigegeben ist. Ein zweites Teilen lehnt die Nextcloud ab – und im Browser kommt diese Ablehnung ohne CORS-Freigabe an, sieht also wie „keine Antwort“ aus. Bestehende Freigabe = Erfolg („war schon freigegeben“).
 
 1. Die App bittet die **eigene** Nextcloud, eine Freigabe vom Typ „föderiert“ (Nummer 6) für den Ordner anzulegen.
 2. Die Nextcloud meldet die Freigabe **Server zu Server** an Sciebo (Open Cloud Mesh). Der Browser ist daran nicht beteiligt – darum gibt es dabei keine CORS-Sperre.

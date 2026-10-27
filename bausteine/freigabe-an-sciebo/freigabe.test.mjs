@@ -15,7 +15,10 @@ test("Cloud-ID ohne Server oder mit Leerzeichen ist ungültig", () => {
 
 function fakeFetch(answer = { ocs: { meta: { status: "ok" }, data: { id: 42 } } }, ok = true) {
   const calls = [];
-  const f = async (url, opts) => { calls.push({ url, opts }); return { ok, status: ok ? 200 : 403, statusText: "", json: async () => answer }; };
+  const f = async (url, opts) => {
+    if (opts.method === "GET") return { ok: true, status: 200, json: async () => ({ ocs: { meta: { status: "ok" }, data: [] } }) };
+    calls.push({ url, opts }); return { ok, status: ok ? 200 : 403, statusText: "", json: async () => answer };
+  };
   f.calls = calls;
   return f;
 }
@@ -62,4 +65,26 @@ test("Schon freigegeben gilt als Erfolg, nicht als Fehler", async () => {
   const f = fakeFetch({ ocs: { meta: { status: "failure", statuscode: 403, message: "Sharing SignTest failed, because this item is already shared with the account a@b.de" } } }, false);
   const r = await shareFolderToCloudId({ server: "https://nc.example.de", user: "me", appPassword: "pw", folder: "SignTest", cloudId: "a@b.de", fetchImpl: f });
   assert.equal(r.already, true);
+});
+
+test("Bestehende Freigabe wird vorher erkannt – kein zweites Anlegen", async () => {
+  const posts = [];
+  const f = async (url, opts) => {
+    if (opts.method === "GET") return { ok: true, status: 200, json: async () => ({ ocs: { meta: { status: "ok" }, data: [{ id: 7, share_type: 6, share_with: "Name@uni-koeln.de@uni-koeln.sciebo.de" }] } }) };
+    posts.push(url); throw new TypeError("Failed to fetch");
+  };
+  const r = await shareFolderToCloudId({ server: "https://nc.example.de", user: "me", appPassword: "pw", folder: "SignTest", cloudId: "name@uni-koeln.de@uni-koeln.sciebo.de", fetchImpl: f });
+  assert.equal(r.already, true);
+  assert.equal(r.id, 7);
+  assert.equal(posts.length, 0);
+});
+
+test("Keine lesbare Antwort beim Anlegen, aber Freigabe existiert danach → Erfolg", async () => {
+  let gets = 0;
+  const f = async (url, opts) => {
+    if (opts.method === "GET") { gets++; return { ok: true, status: 200, json: async () => ({ ocs: { meta: { status: "ok" }, data: gets > 1 ? [{ id: 9, share_type: 6, share_with: "a@b.de" }] : [] } }) }; }
+    throw new TypeError("Failed to fetch");
+  };
+  const r = await shareFolderToCloudId({ server: "https://nc.example.de", user: "me", appPassword: "pw", folder: "S", cloudId: "a@b.de", fetchImpl: f });
+  assert.equal(r.id, 9);
 });

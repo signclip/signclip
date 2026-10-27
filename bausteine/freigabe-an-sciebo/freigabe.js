@@ -60,6 +60,32 @@ function basicAuth(user, password) {
  * @param {typeof fetch} [o.fetchImpl=fetch]  austauschbar (Tests, Capacitor)
  * @returns {Promise<{ id: string|number|null, already: boolean, raw: any }>}  already = war schon freigegeben
  */
+/**
+ * Liest die bestehenden Freigaben eines Ordners (nur die eigenen).
+ * @returns {Promise<Array<{ id: any, share_type: number, share_with: string }>>}
+ */
+export async function listShares({ server, user, appPassword, folder, via = "webapppassword", fetchImpl = fetch }) {
+  const path = "/" + String(folder || "").trim().replace(/^\/+|\/+$/g, "");
+  const url = server.trim().replace(/\/+$/, "") + ENDPOINT[via] + "?format=json&reshares=false&path=" + encodeURIComponent(path);
+  const res = await fetchImpl(url, {
+    method: "GET",
+    headers: { Authorization: basicAuth(user, appPassword), "OCS-APIRequest": "true", Accept: "application/json" },
+  });
+  const raw = await res.json().catch(() => null);
+  const data = raw && raw.ocs && raw.ocs.data;
+  if (!res.ok || !Array.isArray(data)) throw new Error(`Freigaben lesen: ${res.status}`);
+  return data;
+}
+
+/** Gibt es für den Ordner schon eine föderierte Freigabe an diese Cloud-ID? */
+async function findExisting(opts, cloudId) {
+  try {
+    const list = await listShares(opts);
+    const want = cloudId.trim().toLowerCase();
+    return list.find(sh => Number(sh.share_type) === SHARE_TYPE.federated && String(sh.share_with || "").toLowerCase() === want) || null;
+  } catch { return null; } // Lesen nicht möglich → einfach weiter mit Anlegen
+}
+
 export async function shareFolderToCloudId({
   server, user, appPassword, folder, cloudId,
   permissions = PERMISSION.read, via = "webapppassword", fetchImpl = fetch,
@@ -69,6 +95,13 @@ export async function shareFolderToCloudId({
   const path = "/" + String(folder || "").trim().replace(/^\/+|\/+$/g, "");
   if (path === "/") throw new Error("Ordner angeben.");
   if (!ENDPOINT[via]) throw new Error(`Unbekannter Weg: ${via}`);
+
+  // Erst nachsehen: Ist der Ordner schon an diese ID freigegeben? Die Nextcloud lehnt ein zweites
+  // Teilen ab – und im Browser kommt diese Ablehnung oft ohne CORS-Freigabe an, sieht also wie
+  // „keine Antwort“ aus. Darum vorher prüfen.
+  const listOpts = { server, user, appPassword, folder, via, fetchImpl };
+  const before = await findExisting(listOpts, cloudId);
+  if (before) return { id: before.id ?? null, already: true, raw: before };
 
   const url = server.trim().replace(/\/+$/, "") + ENDPOINT[via] + "?format=json";
   let res;
@@ -86,6 +119,9 @@ export async function shareFolderToCloudId({
       }).toString(),
     });
   } catch {
+    // Keine lesbare Antwort: vielleicht ist die Freigabe trotzdem entstanden (oder bestand schon) – nachsehen.
+    const after = await findExisting(listOpts, cloudId);
+    if (after) return { id: after.id ?? null, already: false, raw: after };
     throw new Error(via === "webapppassword"
       ? "Keine Antwort – im Browser meist CORS: WebAppPassword, Feld „Files sharing“, App-Adresse eintragen."
       : "Keine Antwort – Netz oder Adresse prüfen.");
