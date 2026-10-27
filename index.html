@@ -398,7 +398,12 @@ async function loadShares() {
       if (Number(sh.share_type) !== SHARE_TYPE.federated) continue;
       const p = String(sh.path || "").replace(/^\/+|\/+$/g, "");
       if (!sharedTo.has(p)) sharedTo.set(p, []);
-      sharedTo.get(p).push(sh.share_with);
+      // Annahme-Stand: Die Nextcloud-Doku sagt nicht verbindlich, ob die Antwort ihn enthält.
+      // Falls ein Feld „status“ (1 = angenommen, 0 = offen) oder „accepted“ mitkommt, wird es genutzt.
+      let state = "unbekannt";
+      if (sh.status !== undefined && sh.status !== null && typeof sh.status !== "object") state = Number(sh.status) === 1 ? "angenommen" : Number(sh.status) === 0 ? "offen" : "unbekannt";
+      else if (sh.accepted !== undefined && sh.accepted !== null) state = (sh.accepted === true || Number(sh.accepted) === 1) ? "angenommen" : "offen";
+      sharedTo.get(p).push({ to: sh.share_with, state });
     }
   } catch { /* Freigaben nicht lesbar – Baum trotzdem anzeigen */ }
 }
@@ -414,7 +419,11 @@ function badgesFor(node) {
   if (mounted) out.push({ cls: "mnt", text: "⇄ eingebunden" });
   const t = new Set(i.shareTypes || []);
   const ids = sharedTo.get(node.path) || [];
-  if (t.has(6) || ids.length) out.push({ cls: "out", text: "→ an andere Cloud", title: ids.join(", ") });
+  if (t.has(6) || ids.length) {
+    const states = new Set(ids.map(x => x.state));
+    const suffix = states.size === 1 && !states.has("unbekannt") ? (states.has("angenommen") ? " · angenommen" : " · noch offen") : (states.has("offen") ? " · teils offen" : "");
+    out.push({ cls: "out", text: "→ an andere Cloud" + suffix, title: ids.map(x => `${x.to} (${x.state})`).join(", ") || "Annahme-Stand unbekannt" });
+  }
   if (t.has(3)) out.push({ cls: "out", text: "→ per Link" });
   if (t.has(0) || t.has(1)) out.push({ cls: "out", text: "→ an Personen" });
   return out;
@@ -442,7 +451,7 @@ function drawTree() {
   for (const { path, depth } of tree) {
     const o = document.createElement("option");
     o.value = path;
-    const isOut = badgesFor(tree.find(x => x.path === path)).some(b => b.text === "→ an andere Cloud");
+    const isOut = badgesFor(tree.find(x => x.path === path)).some(b => b.text.startsWith("→ an andere Cloud"));
     o.textContent = "\u00a0\u00a0".repeat(depth) + path.split("/").pop() + (isOut ? "  ✓ schon freigegeben" : "");
     $("#sFolder").append(o);
   }
