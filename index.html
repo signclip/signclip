@@ -232,17 +232,19 @@ $("#bConnect").onclick = async () => {
   const p = parseLogin($("#cid").value), pw = $("#pw").value;
   if (!p || !pw) return log("Bitte Konto im Format benutzer@server und Passwort eintragen.", "err");
   acc = { ...p, pw };
+  // Schritt 1: nur die Anmeldung prüfen (Hauptordner lesen). Alles Weitere darf die Anmeldung nicht scheitern lassen.
   try {
-    await mkcol("SignTest");
-    const items = await propfind("");
-    saveAcc(acc, $("#remember").checked);
-    $("#pw").value = "";
-    showWho();
-    log(`Angemeldet. ${items.filter(i => i.dir).length} Ordner gefunden, „SignTest“ ist bereit.`, "ok");
-    await renderTargets();
-    updateDirect();
-    $("#secRec").open = true;
-  } catch (e) { acc = null; showWho(); log("Anmelden: " + e.message, "err"); }
+    await propfind("");
+  } catch (e) { acc = null; showWho(); log("Anmelden: " + e.message, "err"); return; }
+  saveAcc(acc, $("#remember").checked);
+  $("#pw").value = "";
+  showWho();
+  updateDirect();
+  log("Angemeldet.", "ok");
+  $("#secRec").open = true;
+  // Schritt 2: Ordner vorbereiten und Baum laden – Fehler hier nur melden.
+  try { await mkcol("SignTest"); } catch (e) { log(e.message, "err"); }
+  try { await renderTargets(); } catch (e) { log("Ordner laden: " + e.message, "err"); }
 };
 $("#bForget").onclick = () => {
   try { sessionStorage.removeItem("nc"); localStorage.removeItem("nc"); } catch {}
@@ -336,10 +338,15 @@ let sharedTo = new Map(); // Ordnerpfad → [Cloud-IDs, an die föderiert freige
 
 // Ordnerbaum laden: Ebene für Ebene (Depth 1), höchstens 3 Ebenen und 200 Ordner.
 async function loadTree(maxDepth = 3, maxCount = 200) {
-  const out = [], queue = [{ path: "", depth: 0 }];
+  const out = [], queue = [{ path: "", depth: 0 }], skipped = [];
   while (queue.length && out.length < maxCount) {
     const { path, depth } = queue.shift();
-    const items = (await propfind(path)).filter(i => i.dir);
+    let items = [];
+    try { items = (await propfind(path)).filter(i => i.dir); }
+    catch (e) {
+      if (!path) throw e;                  // Hauptordner nicht lesbar: echter Fehler
+      skipped.push(path); continue;        // z. B. eingebundener Sciebo-Ordner antwortet nicht: überspringen
+    }
     for (const it of items) {
       const p = path ? `${path}/${it.name}` : it.name;
       out.push({ path: p, depth });
@@ -347,6 +354,7 @@ async function loadTree(maxDepth = 3, maxCount = 200) {
     }
   }
   // in Baumreihenfolge sortieren (Eltern vor Kindern, alphabetisch)
+  if (skipped.length) log(`Nicht lesbar (übersprungen): ${skipped.join(", ")} – z. B. ein eingebundener Ordner, der gerade nicht antwortet.`, "err");
   const cmp = (a, b) => { // Abschnitt für Abschnitt vergleichen, damit Unterordner direkt unter ihrem Ordner stehen
     const x = a.path.split("/"), y = b.path.split("/");
     for (let i = 0; i < Math.min(x.length, y.length); i++) {
