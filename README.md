@@ -4,6 +4,10 @@ Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärde
 
 **Stand:** Neustart. Die erste Version liegt unverändert in [`InitialVersion/`](InitialVersion/) und läuft dort weiter. Die neue App wird hier in `main` Schritt für Schritt von Grund auf gebaut, mit Fokus auf langlebige Datenmodelle und austauschbare Module.
 
+## Nextcloud-Test (vorübergehend)
+
+`index.html` im Hauptordner ist zurzeit eine kleine Test-App: Verbindung zur eigenen Nextcloud, quadratische Aufnahme speichern, Sciebo-Freigabe einbinden, Konten anlegen und per Einladungslink anmelden. Anleitung: [docs/NEXTCLOUD-TEST.md](docs/NEXTCLOUD-TEST.md). Im Code stehen keine Zugangsdaten. Nach dem Test wird die Datei durch die echte App ersetzt.
+
 ## Dokumente
 
 | Dokument | Inhalt |
@@ -13,6 +17,7 @@ Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärde
 | [docs/ETAPPEN.md](docs/ETAPPEN.md) | Vier Etappen von der ersten Person bis zur übergreifenden Anwendung, Regeln, offene Entscheidungen |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Datenmodelle, Module, Abhängigkeiten, Bauplan in kleinen Schritten |
 | [docs/RESEARCH.md](docs/RESEARCH.md) | Forschungsfragen, Annahmen, was noch zu prüfen ist |
+| [docs/NEXTCLOUD-TEST.md](docs/NEXTCLOUD-TEST.md) | Vorübergehend: Anleitung zur Nextcloud-Test-App im Hauptordner |
 
 ## Erste Version (`InitialVersion/`)
 

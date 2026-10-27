@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign Nextcloud-Test</title>
+<!--
+  Sign – Nextcloud-Test
+  Eine einzige Datei, keine fremden Bibliotheken, keine Zugangsdaten im Code.
+  Zugangsdaten werden nur zur Laufzeit im Browser eingegeben (Abschnitt "Verbindung").
+  Prüft: Verbindung/CORS, quadratische Aufnahme speichern, Sciebo-Freigabe einbinden,
+  in eingebundene Ordner speichern, Konto anlegen + Einladungslink, Einladung annehmen.
+-->
+<style>
+  :root { --bg:#faf9f7; --fg:#222; --mut:#7a7873; --card:#fff; --line:#e6e3dd;
+          --rc:#f5c6b8; --sc:#b9d4ee; --ok:#2e7d32; --err:#c62828; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#171716; --fg:#eeece7; --mut:#9a978f; --card:#222220; --line:#363633; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; font-weight:600; margin:4px 0 12px; }
+  details { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px 14px; margin-bottom:12px; }
+  summary { font-weight:600; cursor:pointer; }
+  label { display:block; font-size:13px; color:var(--mut); margin-top:8px; }
+  input[type=text], input[type=password], input[type=url], input[type=email], input[type=number] {
+    width:100%; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--fg); font-size:15px; }
+  button { border:0; border-radius:20px; padding:10px 16px; margin:8px 6px 0 0; font-size:14px; font-weight:600;
+           background:var(--sc); color:#1d1b20; cursor:pointer; }
+  button.rec { background:var(--rc); }
+  button:disabled { opacity:.45; cursor:default; }
+  .mut { color:var(--mut); font-size:13px; }
+  .row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .row:last-child { border-bottom:0; }
+  .stage { position:relative; width:100%; aspect-ratio:1; background:#000; border-radius:20px; overflow:hidden; margin-top:8px; }
+  .stage canvas, .stage video.play { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  #cv { transform:scaleX(-1); }            /* Vorschau gespiegelt, Datei bleibt ungespiegelt */
+  #cam { position:absolute; width:2px; height:2px; opacity:0; }
+  #time { position:absolute; left:50%; bottom:10px; transform:translateX(-50%); background:rgba(0,0,0,.5);
+          color:#fff; border-radius:99px; padding:2px 10px; font-size:13px; }
+  #log { list-style:none; padding:0; margin:0; font-size:13px; }
+  #log li { padding:4px 0; border-bottom:1px solid var(--line); word-break:break-word; }
+  .ok { color:var(--ok); } .err { color:var(--err); }
+  code, .box { font-family:ui-monospace,monospace; font-size:12px; background:var(--bg); border:1px solid var(--line);
+         border-radius:8px; padding:6px; display:block; word-break:break-all; margin-top:6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sign · Nextcloud-Test</h1>
+  <p class="mut" id="who">Nicht verbunden.</p>
+
+  <!-- 1. VERBINDUNG ---------------------------------------------------------------->
+  <details id="secConn" open>
+    <summary>1 · Verbindung</summary>
+    <p class="mut">Zugangsdaten werden nur hier eingegeben und nur in diesem Browser gehalten – nie im Code, nie auf GitHub.
+      Nutze ein <b>App-Passwort</b> (Nextcloud → Einstellungen → Sicherheit → Geräte &amp; Sitzungen), nicht dein Hauptpasswort.</p>
+    <label>Nextcloud-Adresse</label><input type="url" id="srv" placeholder="https://nx12345.your-storageshare.de" autocomplete="off">
+    <label>Benutzername</label><input type="text" id="usr" autocomplete="username">
+    <label>App-Passwort</label><input type="password" id="pw" autocomplete="current-password">
+    <label><input type="checkbox" id="remember"> Auf diesem Gerät merken (sonst nur bis zum Schließen des Tabs)</label>
+    <button id="bConnect">Verbinden + testen</button>
+    <button id="bForget">Auf diesem Gerät vergessen</button>
+  </details>
+
+  <!-- 2. AUFNAHME ------------------------------------------------------------------>
+  <details id="secRec">
+    <summary>2 · Quadratische Aufnahme</summary>
+    <div class="stage">
+      <video id="cam" playsinline muted></video>
+      <canvas id="cv"></canvas>
+      <video id="play" class="play" playsinline controls hidden></video>
+      <span id="time" hidden>0,0 s</span>
+    </div>
+    <button id="bCam">Kamera an</button>
+    <button id="bStart" class="rec" disabled>Start</button>
+    <button id="bStop" disabled>Stopp</button>
+    <button id="bSave" disabled>Speichern</button>
+    <button id="bDiscard" disabled>Verwerfen</button>
+    <p class="mut" id="recInfo"></p>
+  </details>
+
+  <!-- 3. SPEICHERORTE --------------------------------------------------------------->
+  <details id="secTargets">
+    <summary>3 · Speicherorte („immer speichern“)</summary>
+    <p class="mut">Ordner in deiner Nextcloud. Eingebundene Sciebo-Ordner erscheinen hier ebenfalls, sobald sie angenommen sind.
+      Jede Aufnahme geht in alle angehakten Ordner.</p>
+    <button id="bList">Ordner laden</button>
+    <button id="bMkTest">Ordner „SignTest“ anlegen</button>
+    <div id="targets"></div>
+  </details>
+
+  <!-- 4. SCIEBO -------------------------------------------------------------------->
+  <details id="secSciebo">
+    <summary>4 · Sciebo-Freigabe einbinden</summary>
+    <p class="mut">Die App spricht Sciebo nicht direkt an (Browser-Sperre CORS). Stattdessen bindet deine Nextcloud den Sciebo-Ordner ein.</p>
+    <label>Sciebo-Freigabelink</label><input type="url" id="sLink" placeholder="https://uni-koeln.sciebo.de/s/…">
+    <p class="mut">Schritt 1: Seite öffnen, dort „Zu deiner Nextcloud hinzufügen“ wählen und diese Adresse eingeben:</p>
+    <span class="box" id="fedId">– erst verbinden –</span>
+    <button id="bCopyFed">Adresse kopieren</button>
+    <button id="bOpenSciebo">Sciebo-Seite öffnen</button>
+    <p class="mut">Schritt 2: zurückkommen und annehmen.</p>
+    <button id="bPending">Ausstehende Freigaben laden</button>
+    <div id="pending"></div>
+    <button id="bRemote">Eingebundene Freigaben anzeigen</button>
+    <div id="remote"></div>
+  </details>
+
+  <!-- 5. VERWALTUNG ---------------------------------------------------------------->
+  <details id="secAdmin">
+    <summary>5 · Verwaltung: Konto anlegen + Einladung</summary>
+    <p class="mut">Funktioniert nur, wenn dein Konto Gruppenadmin der Zielgruppe ist (oder Admin). Das Zufallspasswort des neuen Kontos
+      wird nur kurz im Speicher gehalten und danach verworfen.</p>
+    <label>Anzeigename</label><input type="text" id="aName" placeholder="z. B. Test Person">
+    <label>Benutzer-ID</label><input type="text" id="aId" placeholder="wird vorgeschlagen">
+    <label>E-Mail (optional)</label><input type="email" id="aMail">
+    <label>Gruppe</label><input type="text" id="aGroup" value="sign-teilnehmende">
+    <label>Speicherkontingent</label><input type="text" id="aQuota" value="5 GB">
+    <label>Höchstens neue Konten in dieser Sitzung</label><input type="number" id="aMax" value="3" min="0" max="20">
+    <button id="bCreate">Konto anlegen + Einladung erzeugen</button>
+    <div id="invite"></div>
+  </details>
+
+  <!-- PROTOKOLL -------------------------------------------------------------------->
+  <details open>
+    <summary>Protokoll</summary>
+    <ul id="log"></ul>
+  </details>
+</main>
+
+<script>
+"use strict";
+// ───────────────────────── Hilfsfunktionen ─────────────────────────
+const $ = s => document.querySelector(s);
+function log(msg, cls = "") {
+  const li = document.createElement("li");
+  li.className = cls;
+  li.textContent = new Date().toLocaleTimeString() + "  " + msg;
+  $("#log").prepend(li);
+}
+// UTF-8-sicheres Base64 (für Basic-Auth und Einladungslink)
+const b64 = s => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+const b64url = s => b64(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64url = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0)));
+// Zufallszeichen aus dem Krypto-Zufallsgenerator des Browsers
+function randomString(n, chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789") {
+  const a = crypto.getRandomValues(new Uint32Array(n));
+  return [...a].map(x => chars[x % chars.length]).join("");
+}
+
+// ───────────────────────── Zugang (nur im Browser) ─────────────────────────
+// acc = { server, user, pw }   pw ist immer ein App-Passwort
+let acc = null;
+function loadAcc() {
+  try { return JSON.parse(sessionStorage.getItem("nc") || localStorage.getItem("nc") || "null"); } catch { return null; }
+}
+function saveAcc(a, remember) {
+  const s = JSON.stringify(a);
+  try { sessionStorage.setItem("nc", s); } catch {}
+  try { remember ? localStorage.setItem("nc", s) : localStorage.removeItem("nc"); } catch {}
+}
+function forgetAcc() {
+  try { sessionStorage.removeItem("nc"); localStorage.removeItem("nc"); } catch {}
+  acc = null; showWho();
+}
+const base = a => a.server.trim().replace(/\/+$/, "");
+const host = a => base(a).replace(/^https?:\/\//, "");
+const encPath = p => p.split("/").map(encodeURIComponent).join("/");
+const davRoot = a => `${base(a)}/remote.php/dav/files/${encodeURIComponent(a.user)}`;
+
+function showWho() {
+  $("#who").textContent = acc ? `Verbunden als ${acc.user} @ ${host(acc)}` : "Nicht verbunden.";
+  $("#fedId").textContent = acc ? `${acc.user}@${host(acc)}` : "– erst verbinden –";
+}
+
+// ───────────────────────── HTTP: WebDAV und OCS ─────────────────────────
+async function req(method, url, { a = acc, headers = {}, body } = {}) {
+  if (!a) throw new Error("Nicht verbunden.");
+  let r;
+  try {
+    r = await fetch(url, { method, headers: { Authorization: "Basic " + b64(a.user + ":" + a.pw), ...headers }, body });
+  } catch (e) {
+    // fetch wirft ohne Statuscode, wenn der Browser die Antwort blockiert (CORS) oder der Server nicht erreichbar ist
+    throw new Error("Keine Antwort – meist CORS (WebAppPassword-Freigabe für diese Adresse prüfen) oder Adresse falsch.");
+  }
+  if (!r.ok) throw new Error(`${method} → ${r.status} ${r.statusText}`);
+  return r;
+}
+// OCS = Verwaltungs-Schnittstelle von Nextcloud (Benutzer, Freigaben, App-Passwörter)
+async function ocs(method, path, params, a = acc) {
+  const url = base(a) + path + (path.includes("?") ? "&" : "?") + "format=json";
+  const body = params ? new URLSearchParams(params) : undefined;
+  const headers = { "OCS-APIRequest": "true" };
+  if (body) headers["Content-Type"] = "application/x-www-form-urlencoded";
+  const r = await req(method, url, { a, headers, body });
+  const j = await r.json();
+  const m = j.ocs.meta;
+  if (m.status !== "ok") throw new Error(`OCS ${m.statuscode}: ${m.message || "Fehler"}`);
+  return j.ocs.data;
+}
+async function propfind(path = "") {
+  const xml = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getetag/></d:prop></d:propfind>';
+  const r = await req("PROPFIND", davRoot(acc) + "/" + encPath(path), { headers: { Depth: "1", "Content-Type": "application/xml" }, body: xml });
+  const doc = new DOMParser().parseFromString(await r.text(), "application/xml");
+  const items = [...doc.getElementsByTagNameNS("DAV:", "response")].map(n => {
+    const href = decodeURIComponent(n.getElementsByTagNameNS("DAV:", "href")[0].textContent).replace(/\/$/, "");
+    return { name: href.split("/").pop(), dir: n.getElementsByTagNameNS("DAV:", "collection").length > 0 };
+  });
+  return items.slice(1); // erster Eintrag ist der Ordner selbst
+}
+async function mkcol(path) {
+  try { await req("MKCOL", davRoot(acc) + "/" + encPath(path)); }
+  catch (e) { if (!/405/.test(e.message)) throw e; } // 405 = existiert schon
+}
+async function put(path, blob, type) {
+  await req("PUT", davRoot(acc) + "/" + encPath(path), { headers: { "Content-Type": type || "application/octet-stream" }, body: blob });
+}
+
+// ───────────────────────── 1. Verbindung ─────────────────────────
+$("#bConnect").onclick = async () => {
+  const a = { server: $("#srv").value, user: $("#usr").value.trim(), pw: $("#pw").value };
+  if (!a.server || !a.user || !a.pw) return log("Bitte Adresse, Benutzername und App-Passwort ausfüllen.", "err");
+  acc = a;
+  try {
+    const items = await propfind("");
+    saveAcc(a, $("#remember").checked);
+    $("#pw").value = "";
+    showWho();
+    log(`T1 bestanden: Verbindung ok, ${items.length} Einträge im Hauptordner.`, "ok");
+  } catch (e) { acc = null; showWho(); log("T1/T3 nicht bestanden: " + e.message, "err"); }
+};
+$("#bForget").onclick = () => { forgetAcc(); log("Zugang auf diesem Gerät vergessen. (Das App-Passwort selbst gilt weiter – widerrufen in Nextcloud → Sicherheit.)"); };
+
+// ───────────────────────── 2. Quadratische Aufnahme ─────────────────────────
+const SIZE = 480; // Kantenlänge in Pixeln
+const cv = $("#cv"), ctx = cv.getContext("2d"), cam = $("#cam");
+cv.width = cv.height = SIZE;
+let stream = null, recorder = null, chunks = [], recBlob = null, recMeta = null, t0 = 0, tick = null;
+
+function drawLoop() {
+  const w = cam.videoWidth, h = cam.videoHeight;
+  if (w && h) {
+    const s = Math.min(w, h); // mittleres Quadrat ausschneiden
+    ctx.drawImage(cam, (w - s) / 2, (h - s) / 2, s, s, 0, 0, SIZE, SIZE);
+  }
+  requestAnimationFrame(drawLoop);
+}
+$("#bCam").onclick = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
+    cam.srcObject = stream; await cam.play();
+    requestAnimationFrame(drawLoop);
+    $("#bStart").disabled = false; $("#bCam").disabled = true;
+    log("Kamera an.", "ok");
+  } catch (e) { log("Kamera: " + e.message, "err"); }
+};
+function pickType() {
+  const list = ["video/mp4;codecs=avc1,mp4a", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
+  return list.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || "";
+}
+$("#bStart").onclick = () => {
+  if (!cv.captureStream) return log("Dieser Browser kann die quadratische Aufnahme nicht (captureStream fehlt).", "err");
+  const out = cv.captureStream(30);
+  stream.getAudioTracks().forEach(t => out.addTrack(t));
+  const type = pickType();
+  recorder = new MediaRecorder(out, type ? { mimeType: type, videoBitsPerSecond: 2000000 } : {});
+  chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    recBlob = new Blob(chunks, { type: recorder.mimeType || "video/webm" });
+    recMeta.durationMs = Math.round(performance.now() - t0);
+    recMeta.mime = recBlob.type; recMeta.bytes = recBlob.size;
+    const p = $("#play"); p.src = URL.createObjectURL(recBlob); p.hidden = false; cv.hidden = true;
+    $("#bSave").disabled = $("#bDiscard").disabled = false;
+    $("#recInfo").textContent = `${(recMeta.durationMs / 1000).toFixed(1)} s · ${(recBlob.size / 1e6).toFixed(2)} MB · ${recBlob.type}`;
+  };
+  t0 = performance.now();
+  recMeta = {
+    schema: "sign-test/0", start: new Date().toISOString(), width: SIZE, height: SIZE,
+    camera: { facing: "user", mirroredPreview: true, mirroredFile: false }, userAgent: navigator.userAgent
+  };
+  recorder.start(1000);
+  $("#time").hidden = false;
+  tick = setInterval(() => { $("#time").textContent = ((performance.now() - t0) / 1000).toFixed(1).replace(".", ",") + " s"; }, 100);
+  $("#bStart").disabled = true; $("#bStop").disabled = false;
+};
+$("#bStop").onclick = () => {
+  recorder.stop(); clearInterval(tick); $("#time").hidden = true;
+  $("#bStop").disabled = true;
+};
+function resetRec() {
+  recBlob = null; $("#play").hidden = true; cv.hidden = false; $("#recInfo").textContent = "";
+  $("#bSave").disabled = $("#bDiscard").disabled = true; $("#bStart").disabled = !stream;
+}
+$("#bDiscard").onclick = () => { resetRec(); log("Aufnahme verworfen."); };
+$("#bSave").onclick = async () => {
+  const targets = getTargets();
+  if (!targets.length) return log("Kein Speicherort angehakt (Abschnitt 3).", "err");
+  const name = "rec-" + recMeta.start.replace(/[:.]/g, "-");
+  const ext = recBlob.type.includes("mp4") ? "mp4" : "webm";
+  const meta = new Blob([JSON.stringify(recMeta, null, 2)], { type: "application/json" });
+  for (const t of targets) {
+    try {
+      await put(`${t}/${name}_video.${ext}`, recBlob, recBlob.type);
+      await put(`${t}/${name}_video.json`, meta, "application/json");
+      log(`T2/T8 bestanden: gespeichert in „${t}“.`, "ok");
+    } catch (e) { log(`Speichern in „${t}“ fehlgeschlagen: ${e.message}`, "err"); }
+  }
+  resetRec();
+};
+
+// ───────────────────────── 3. Speicherorte ─────────────────────────
+function getTargets() { try { return JSON.parse(localStorage.getItem("targets") || '["SignTest"]'); } catch { return ["SignTest"]; } }
+function setTargets(t) { try { localStorage.setItem("targets", JSON.stringify(t)); } catch {} }
+async function renderTargets() {
+  const items = (await propfind("")).filter(i => i.dir);
+  const sel = getTargets();
+  $("#targets").innerHTML = "";
+  for (const i of items) {
+    const row = document.createElement("label"); row.className = "row";
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = sel.includes(i.name);
+    cb.onchange = () => { const t = getTargets().filter(x => x !== i.name); if (cb.checked) t.push(i.name); setTargets(t); };
+    row.append(cb, document.createTextNode(" " + i.name));
+    $("#targets").append(row);
+  }
+  log(`${items.length} Ordner geladen.`, "ok");
+}
+$("#bList").onclick = () => renderTargets().catch(e => log(e.message, "err"));
+$("#bMkTest").onclick = async () => {
+  try { await mkcol("SignTest"); log("Ordner „SignTest“ bereit.", "ok"); await renderTargets(); } catch (e) { log(e.message, "err"); }
+};
+
+// ───────────────────────── 4. Sciebo ─────────────────────────
+$("#bCopyFed").onclick = async () => {
+  if (!acc) return log("Erst verbinden.", "err");
+  try { await navigator.clipboard.writeText(`${acc.user}@${host(acc)}`); log("Adresse kopiert.", "ok"); } catch { log("Kopieren nicht erlaubt – bitte von Hand markieren.", "err"); }
+};
+$("#bOpenSciebo").onclick = () => {
+  const l = $("#sLink").value.trim();
+  if (!/^https:\/\//.test(l)) return log("Bitte einen https-Link einfügen.", "err");
+  window.open(l, "_blank", "noopener");
+};
+const FED = "/ocs/v2.php/apps/files_sharing/api/v1/remote_shares";
+$("#bPending").onclick = async () => {
+  try {
+    const list = await ocs("GET", FED + "/pending");
+    $("#pending").innerHTML = "";
+    if (!list.length) log("Keine ausstehenden Freigaben.");
+    for (const s of list) {
+      const row = document.createElement("div"); row.className = "row";
+      row.textContent = `${s.name} von ${s.owner}@${(s.remote || "").replace(/^https?:\/\//, "")} `;
+      const b = document.createElement("button"); b.textContent = "Annehmen";
+      b.onclick = async () => {
+        try { await ocs("POST", `${FED}/pending/${s.id}`); log(`T7 bestanden: „${s.name}“ angenommen.`, "ok"); row.remove(); }
+        catch (e) { log("Annehmen fehlgeschlagen: " + e.message, "err"); }
+      };
+      row.append(b); $("#pending").append(row);
+    }
+  } catch (e) { log("Freigaben laden: " + e.message, "err"); }
+};
+$("#bRemote").onclick = async () => {
+  try {
+    const list = await ocs("GET", FED);
+    $("#remote").innerHTML = "";
+    for (const s of list) {
+      const row = document.createElement("div"); row.className = "row";
+      row.textContent = `${s.mountpoint || s.name} ← ${(s.remote || "").replace(/^https?:\/\//, "")}`;
+      $("#remote").append(row);
+    }
+    log(`${list.length} eingebundene Freigabe(n). Jetzt in Abschnitt 3 „Ordner laden“ und anhaken.`, "ok");
+  } catch (e) { log("Eingebundene Freigaben: " + e.message, "err"); }
+};
+
+// ───────────────────────── 5. Verwaltung: Konto + Einladung ─────────────────────────
+$("#aName").oninput = () => {
+  const slug = $("#aName").value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 20);
+  $("#aId").placeholder = "sign-" + (slug || randomString(6).toLowerCase());
+};
+$("#bCreate").onclick = async () => {
+  if (!acc) return log("Erst verbinden.", "err");
+  const max = +$("#aMax").value || 0, done = +(sessionStorage.getItem("created") || 0);
+  if (done >= max) return log(`Grenze erreicht (${max} neue Konten in dieser Sitzung). Zahl bewusst erhöhen, wenn nötig.`, "err");
+  const userid = ($("#aId").value.trim() || $("#aId").placeholder || "sign-" + randomString(6).toLowerCase());
+  const displayName = $("#aName").value.trim() || userid;
+  let tempPw = randomString(28) + "!7a";   // Zufallspasswort, wird nach dem App-Passwort verworfen
+  try {
+    const p = new URLSearchParams({ userid, password: tempPw, displayName, quota: $("#aQuota").value.trim() });
+    if ($("#aMail").value.trim()) p.append("email", $("#aMail").value.trim());
+    if ($("#aGroup").value.trim()) p.append("groups[]", $("#aGroup").value.trim());
+    await ocs("POST", "/ocs/v1.php/cloud/users", p);
+    sessionStorage.setItem("created", String(done + 1));
+    log(`T4 bestanden: Konto „${userid}“ angelegt.`, "ok");
+
+    // App-Passwort für das neue Konto erzeugen (geht nur mit dessen echtem Passwort)
+    const d = await ocs("GET", "/ocs/v2.php/core/getapppassword", null, { server: acc.server, user: userid, pw: tempPw });
+    tempPw = null; // verwerfen
+    log("T5 bestanden: App-Passwort für das neue Konto erzeugt.", "ok");
+
+    const payload = { v: 1, s: base(acc), u: userid, p: d.apppassword, n: displayName };
+    const link = location.origin + location.pathname + "#join=" + b64url(JSON.stringify(payload));
+    $("#invite").innerHTML = "";
+    const box = document.createElement("span"); box.className = "box"; box.textContent = link;
+    const bc = document.createElement("button"); bc.textContent = "Link kopieren";
+    bc.onclick = () => navigator.clipboard.writeText(link).then(() => log("Einladungslink kopiert.", "ok"));
+    const bs = document.createElement("button"); bs.textContent = "Teilen";
+    bs.onclick = () => navigator.share ? navigator.share({ title: "Einladung zu Sign", text: `Hallo ${displayName}, hier ist deine Einladung zu Sign:`, url: link }).catch(() => {}) : log("Teilen wird hier nicht unterstützt – Link kopieren.");
+    const note = document.createElement("p"); note.className = "mut";
+    note.textContent = "Der Link enthält einen Zugang. Nur an diese Person schicken. Beim ersten Öffnen wird er ausgetauscht und danach ungültig.";
+    $("#invite").append(box, bc, bs, note);
+  } catch (e) { log("Konto/Einladung: " + e.message, "err"); }
+};
+
+// ───────────────────────── Einladung annehmen (#join=…) ─────────────────────────
+async function handleJoin() {
+  const m = location.hash.match(/^#join=([A-Za-z0-9_-]+)$/);
+  if (!m) return false;
+  history.replaceState(null, "", location.pathname + location.search); // Zugang sofort aus der Adresszeile entfernen
+  let j;
+  try { j = JSON.parse(unb64url(m[1])); } catch { log("Einladungslink beschädigt.", "err"); return true; }
+  const a = { server: j.s, user: j.u, pw: j.p };
+  try {
+    const d = await ocs("POST", "/ocs/v2.php/core/apppassword/rotate", null, a); // altes App-Passwort wird ungültig
+    a.pw = d.apppassword;
+    acc = a; saveAcc(a, true); showWho();
+    log(`T6 bestanden: Willkommen, ${j.n || j.u}! Einladung angenommen, Link ist jetzt ungültig.`, "ok");
+    try { await mkcol("SignTest"); } catch {}
+    $("#secConn").open = false; $("#secRec").open = true;
+  } catch (e) {
+    log("Einladung ungültig oder schon benutzt – bitte neue Einladung anfordern. (" + e.message + ")", "err");
+  }
+  return true;
+}
+
+// ───────────────────────── Start ─────────────────────────
+(async () => {
+  if (!(await handleJoin())) { acc = loadAcc(); }
+  if (acc) { $("#srv").value = acc.server; $("#usr").value = acc.user; }
+  showWho();
+  if (!window.isSecureContext) log("Achtung: Seite läuft nicht über https – Kamera und Krypto sind gesperrt.", "err");
+})();
+</script>
+</body>
+</html>
