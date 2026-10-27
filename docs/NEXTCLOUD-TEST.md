@@ -116,8 +116,8 @@ Kommt eine **Warnung**, bitte den genauen Text melden. Häufige Ursachen:
 ### 4b · Sciebo-Ordner in die Nextcloud holen (zum Hineinspeichern)
 | In der App | Danach von Hand |
 | --- | --- |
-| Sciebo-Freigabelink einfügen → **Link öffnen** (deine Nextcloud-ID wird dabei kopiert) | auf der Sciebo-Seite **„Zu deiner Nextcloud hinzufügen“** → ID einfügen → bestätigen |
-| **Nextcloud öffnen zum Annehmen** | in der Nextcloud **Glocke** → **annehmen** |
+| Sciebo-Freigabelink einfügen → **Direkt in meine Nextcloud übernehmen** | in der Nextcloud „Freigabe hinzufügen?“ bestätigen → neu laden oder **Glocke** → **annehmen** |
+| **Prüfen: schon in meiner Nextcloud?** | noch nicht da → „Ausstehende Freigaben“ öffnet sich automatisch wieder |
 | **3 · Ordner laden** → Sciebo-Ordner anhaken | – |
 
 Hineinspeichern geht nur, wenn die Sciebo-Freigabe Hochladen/Bearbeiten erlaubt.

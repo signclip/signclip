@@ -113,7 +113,12 @@
       <input type="range" id="fSize" min="40" max="100" step="1" style="width:100%"></label>
     <label>Fokus-Höhe (nach oben / unten) <span id="fYV"></span>
       <input type="range" id="fY" min="-25" max="25" step="1" style="width:100%"></label>
-    <label><input type="checkbox" id="bgDefer"> Original speichern, Hintergrund und Fokus erst später anwenden (empfohlen)</label>
+    <label>Speichern als</label>
+    <select id="saveMode">
+      <option value="both">Beides: Original und mit Hintergrund/Fokus (empfohlen)</option>
+      <option value="orig">Nur Original – Hintergrund und Fokus später</option>
+      <option value="applied">Nur mit Hintergrund/Fokus</option>
+    </select>
     <label><input type="checkbox" id="bgHands"> Hände schützen – Finger werden nie zum Hintergrund</label>
     <p class="mut" id="bgInfo">Hintergrund-Erkennung läuft auf dem Gerät (MediaPipe), nichts wird hochgeladen. Beim ersten Mal werden ca. 1–2 MB geladen.</p>
     <button id="bCam">Kamera an</button>
@@ -172,14 +177,9 @@
       <li>Gleich dort in der Nextcloud weiter: Seite <b>neu laden</b> oder oben die <b>Glocke</b> → Freigabe <b>annehmen</b>. Kein Zurückspringen nötig.</li>
       <li>Zurück hier: <b>3 · Ordner laden</b> → den Ordner anhaken.</li>
     </ol>
-    <p class="mut">Falls deine Nextcloud nicht fragt – alter Weg über die Sciebo-Seite. Sciebo ist ein anderer Server: Die App kann dort nichts
-      vorausfüllen, darum wird deine Nextcloud-ID beim Öffnen kopiert und du fügst sie bei „Zu deiner Nextcloud hinzufügen“ ein.</p>
-    <button id="bOpenLink">Über Sciebo-Seite (ID wird kopiert)</button>
-    <button id="bOpenNc">Nextcloud öffnen zum Annehmen</button>
     <button id="bCheckIn">Prüfen: schon in meiner Nextcloud?</button>
+    <p class="mut">Noch nicht angekommen? Dann öffnet sich „Ausstehende Freigaben“ in deiner Nextcloud automatisch wieder.</p>
     <div id="inList"></div>
-    <p class="mut">Deine Nextcloud-ID:</p>
-    <span class="box" id="fedId">– erst anmelden –</span>
   </details>
 
   <!-- 5. KONTEN --------------------------------------------------------------------->
@@ -241,7 +241,6 @@ const encPath = p => p.split("/").map(encodeURIComponent).join("/");
 const davRoot = a => `${a.server}/remote.php/dav/files/${encodeURIComponent(a.user)}`;
 function showWho() {
   $("#who").textContent = acc ? `Angemeldet als ${ncId(acc)}` : "Nicht angemeldet.";
-  $("#fedId").textContent = acc ? ncId(acc) : "– erst anmelden –";
 }
 
 // ───────────────────────── WebDAV (Dateien) ─────────────────────────
@@ -320,7 +319,7 @@ raw.width = raw.height = SIZE;
 // Hilfsleinwand für den Hand-Schutz (dort werden Hände als dicke Linien gezeichnet)
 const pc = document.createElement("canvas"), pctx = pc.getContext("2d", { willReadFrequently: true });
 pc.width = pc.height = SIZE;
-let stream = null, recorder = null, chunks = [], recBlob = null, recMeta = null, t0 = 0, tick = null;
+let stream = null, recorder = null, chunks = [], recBlob = null, recorderFx = null, chunksFx = [], fxBlob = null, recMeta = null, t0 = 0, tick = null;
 
 // ───── Hintergrund ersetzen (MediaPipe Bildsegmentierung, läuft im Browser auf dem Gerät) ─────
 // Herkunft: Google MediaPipe Tasks Vision (Apache 2.0), Modell „selfie_segmenter“ (Person vs. Hintergrund).
@@ -329,7 +328,7 @@ const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 const SEG_MODEL = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite";
 let bgMode = store.get("bgMode", "orig"), bgColor = store.get("bgColor", "#2f6f4f");
 let segmenter = null, hands = null, segLoading = false, lastTs = 0;
-let bgDefer = store.get("bgDefer", "1") === "1", bgHands = store.get("bgHands", "1") === "1";
+let saveMode = store.get("saveMode", "both"), bgHands = store.get("bgHands", "1") === "1";
 let fShape = store.get("fShape", "none"), fOut = store.get("fOut", "dim");
 let fSize = Number(store.get("fSize", "88")), fY = Number(store.get("fY", "0"));
 let prevA = null; // Maske des vorigen Bildes (zeitliche Glättung)
@@ -404,8 +403,8 @@ $("#bgMode").value = bgMode; $("#bgColor").value = bgColor;
 $("#bgMode").onchange = () => { bgMode = $("#bgMode").value; store.set("bgMode", bgMode); if (bgMode !== "orig") ensureSegmenter(); };
 $("#bgColor").oninput = () => { bgColor = $("#bgColor").value; store.set("bgColor", bgColor); if (bgMode === "orig") { bgMode = "color"; $("#bgMode").value = "color"; store.set("bgMode", bgMode); ensureSegmenter(); } };
 if (bgMode !== "orig") ensureSegmenter();
-$("#bgDefer").checked = bgDefer; $("#bgHands").checked = bgHands;
-$("#bgDefer").onchange = () => { bgDefer = $("#bgDefer").checked; store.set("bgDefer", bgDefer ? "1" : "0"); };
+$("#saveMode").value = saveMode; $("#bgHands").checked = bgHands;
+$("#saveMode").onchange = () => { saveMode = $("#saveMode").value; store.set("saveMode", saveMode); };
 $("#bgHands").onchange = () => { bgHands = $("#bgHands").checked; store.set("bgHands", bgHands ? "1" : "0"); };
 
 // Fokus-Rahmen: Form in der Mitte bleibt, außen wird abgedunkelt/eingefärbt.
@@ -484,11 +483,23 @@ function pickType() {
 $("#bStart").onclick = () => {
   if (!cv.captureStream) return log("Dieser Browser kann die quadratische Aufnahme nicht (captureStream fehlt).", "err");
   // Aufgenommen wird entweder das Original (Hintergrund und Fokus kommen später) oder das bearbeitete Bild.
+  // Original = unverändertes Kamerabild; bearbeitet = mit Hintergrund/Fokus wie in der Vorschau.
   const effects = (bgMode !== "orig" && segmenter) || fShape !== "none";
-  const deferBg = bgDefer;
-  const out = (!effects || bgDefer ? raw : cv).captureStream(30);
+  const keepOrig = !effects || saveMode !== "applied";
+  const withFx = effects && saveMode !== "orig";
+  const deferBg = !withFx;
+  const out = (keepOrig ? raw : cv).captureStream(30);
   stream.getAudioTracks().forEach(t => out.addTrack(t));
   const type = pickType();
+  // Bei „Beides“ läuft ein zweiter Recorder auf der Vorschau-Leinwand mit
+  recorderFx = null; chunksFx = []; fxBlob = null;
+  if (keepOrig && withFx) {
+    const outFx = cv.captureStream(30);
+    stream.getAudioTracks().forEach(t => outFx.addTrack(t.clone()));
+    recorderFx = new MediaRecorder(outFx, type ? { mimeType: type, videoBitsPerSecond: 2000000 } : {});
+    recorderFx.ondataavailable = e => { if (e.data.size) chunksFx.push(e.data); };
+    recorderFx.onstop = () => { fxBlob = new Blob(chunksFx, { type: recorderFx.mimeType || "video/webm" }); };
+  }
   if (!type.startsWith("video/mp4")) log("Dieser Browser kann nicht als MP4 aufnehmen – es wird WebM gespeichert. Für MP4 Safari oder ein aktuelles Chrome/Edge nutzen.", "err");
   recorder = new MediaRecorder(out, type ? { mimeType: type, videoBitsPerSecond: 2000000 } : {});
   chunks = [];
@@ -499,7 +510,8 @@ $("#bStart").onclick = () => {
     recMeta.mime = recBlob.type; recMeta.bytes = recBlob.size;
     const p = $("#play"); p.src = URL.createObjectURL(recBlob); p.hidden = false; cv.hidden = true;
     $("#bSave").disabled = $("#bDiscard").disabled = false;
-    $("#recInfo").textContent = `${(recMeta.durationMs / 1000).toFixed(1)} s · ${(recBlob.size / 1e6).toFixed(2)} MB · ${recBlob.type}`;
+    $("#recInfo").textContent = `${(recMeta.durationMs / 1000).toFixed(1)} s · ${(recBlob.size / 1e6).toFixed(2)} MB · ${recBlob.type}`
+      + (recorderFx ? " · dazu Version mit Hintergrund/Fokus" : "");
   };
   t0 = performance.now();
   recMeta = {
@@ -518,20 +530,22 @@ $("#bStart").onclick = () => {
       shape: fShape, size: fSize / 100, centerY: 0.5 + fY / 100,
       aspect: fShape === "circle" ? 1 : 0.78, cornerRadius: fShape === "rounded" ? 0.14 : null,
       outside: fOut, color: fOut === "dim" ? "rgba(0,0,0,0.55)" : focusColor(),
-      applied: !bgDefer,
+      applied: withFx,
     }
   };
+  recMeta.files = keepOrig && withFx ? ["original", "bearbeitet"] : [keepOrig ? "original" : "bearbeitet"];
   recorder.start(1000);
+  if (recorderFx) recorderFx.start(1000);
   $("#time").hidden = false;
   tick = setInterval(() => { $("#time").textContent = ((performance.now() - t0) / 1000).toFixed(1).replace(".", ",") + " s"; }, 100);
   $("#bStart").disabled = true; $("#bStop").disabled = false;
 };
 $("#bStop").onclick = () => {
-  recorder.stop(); clearInterval(tick); $("#time").hidden = true;
+  recorder.stop(); if (recorderFx) recorderFx.stop(); clearInterval(tick); $("#time").hidden = true;
   $("#bStop").disabled = true;
 };
 function resetRec() {
-  recBlob = null; $("#play").hidden = true; cv.hidden = false; $("#recInfo").textContent = "";
+  recBlob = null; fxBlob = null; $("#play").hidden = true; cv.hidden = false; $("#recInfo").textContent = "";
   $("#bSave").disabled = $("#bDiscard").disabled = true; $("#bStart").disabled = !stream;
 }
 $("#bDiscard").onclick = () => { resetRec(); log("Aufnahme verworfen."); };
@@ -540,12 +554,15 @@ $("#bSave").onclick = async () => {
   if (!targets.length) return log("Kein Speicherort angehakt (Abschnitt 3).", "err");
   const name = "rec-" + recMeta.start.replace(/[:.]/g, "-");
   const ext = recBlob.type.includes("mp4") ? "mp4" : "webm";
+  if (recorderFx && !fxBlob) await new Promise(r => setTimeout(r, 300)); // zweite Datei kurz abwarten
   const meta = new Blob([JSON.stringify(recMeta, null, 2)], { type: "application/json" });
   for (const t of targets) {
     try {
       await mkcol(t); // Zielordner anlegen, falls er fehlt
       await put(`${t}/${name}_video.${ext}`, recBlob, recBlob.type);
       await put(`${t}/${name}_video.json`, meta, "application/json");
+      // Zweite Datei mit Hintergrund/Fokus: gleicher Name mit Zusatz „desc-bearbeitet“, Original bleibt daneben
+      if (fxBlob) await put(`${t}/${name}_desc-bearbeitet_video.${ext}`, fxBlob, fxBlob.type);
       log(`Gespeichert in „${t}“.`, "ok");
     } catch (e) { log(`Speichern in „${t}“ fehlgeschlagen: ${e.message}`, "err"); }
   }
@@ -738,18 +755,6 @@ $("#aDirect").addEventListener("click", () => {
   log("Nextcloud geöffnet: „Freigabe hinzufügen?“ bestätigen → Seite neu laden oder Glocke → annehmen. Danach hier „Prüfen: schon in meiner Nextcloud?“.");
 });
 
-$("#bOpenLink").onclick = async () => {
-  const l = $("#sLink").value.trim();
-  if (!/^https:\/\/[^/]+\/(index\.php\/)?s\/[A-Za-z0-9]+/.test(l)) return log("Bitte einen Sciebo-Freigabelink einfügen (…/s/…).", "err");
-  if (!acc) return log("Erst anmelden (Abschnitt 1) – dann ist deine Nextcloud-ID bekannt.", "err");
-  // Erst kopieren, dann öffnen: Die Zwischenablage geht nur, solange diese Seite den Fokus hat.
-  let copied = false;
-  try { await navigator.clipboard.writeText(ncId(acc)); copied = true; } catch {}
-  window.open(l, "_blank", "noopener");
-  log(copied
-    ? `Sciebo geöffnet. Deine Nextcloud-ID ${ncId(acc)} ist kopiert – bei „Zu deiner Nextcloud hinzufügen“ einfügen.`
-    : `Sciebo geöffnet. Bei „Zu deiner Nextcloud hinzufügen“ eintragen: ${ncId(acc)}`, "ok");
-};
 // Prüfen, welche Freigaben anderer schon in der eigenen Nextcloud angekommen (angenommen/eingebunden) sind.
 // Noch nicht angenommene stehen nicht im Ordnerbaum – die liegen unter „Ausstehende Freigaben“.
 $("#bCheckIn").onclick = async () => {
@@ -763,13 +768,20 @@ $("#bCheckIn").onclick = async () => {
     a.textContent = "Zurück zu „Ausstehende Freigaben“";
     return a;
   };
+  // Nicht gefunden → „Ausstehende Freigaben“ gleich wieder öffnen (derselbe Tab). Klappt nur kurz nach dem Klick;
+  // blockiert der Browser das, bleibt der Link darunter.
+  const reopen = () => {
+    const w = window.open(pendingUrl(), "signNextcloud");
+    log(w ? "„Ausstehende Freigaben“ wieder geöffnet → annehmen, dann hier erneut prüfen."
+          : "Browser hat das Öffnen blockiert – Link „Zurück zu Ausstehende Freigaben“ antippen.", w ? "" : "err");
+  };
   const found = tree.filter(t => badgesFor(t).some(b => b.cls === "in" || b.cls === "mnt"));
   box.innerHTML = "";
   const head = document.createElement("p"); head.className = "mut";
   if (!found.length) {
     head.className = "err";
     head.textContent = "Noch nicht angekommen – vermutlich noch nicht angenommen. In der Nextcloud bei „Ausstehende Freigaben“ annehmen (Seite ggf. neu laden), dann erneut prüfen.";
-    box.append(head, backLink()); return;
+    box.append(head, backLink()); reopen(); return;
   }
   const hit = want && found.find(t => t.path.split("/").pop().toLowerCase() === want);
   head.textContent = hit
@@ -777,7 +789,7 @@ $("#bCheckIn").onclick = async () => {
     : `Angekommen sind ${found.length} Ordner von anderen. „${$("#sName").value.trim()}“ ist nicht darunter – evtl. heißt er anders oder ist noch nicht angenommen.`;
   head.className = hit ? "ok" : "mut";
   box.append(head);
-  if (!hit) box.append(backLink());
+  if (!hit) { box.append(backLink()); reopen(); }
   for (const t of found) {
     const row = document.createElement("div"); row.className = "row";
     row.textContent = t.path;
@@ -785,12 +797,6 @@ $("#bCheckIn").onclick = async () => {
     box.append(row);
   }
 };
-$("#bOpenNc").onclick = () => {
-  if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
-  window.open(pendingUrl(), "signNextcloud"); // Ansicht „Ausstehende Freigaben“, immer derselbe Tab (wird dabei frisch geladen)
-  log("Nextcloud geöffnet bei „Ausstehende Freigaben“ → annehmen (oder oben über die Glocke). Danach hier unter 3 „Ordner laden“.");
-};
-
 // ───────────────────────── Start ─────────────────────────
 for (const k of ["helper", "autoAcc", "autoHosts", "dav"]) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch {} } // Reste früherer Testversionen
 acc = loadAcc();
