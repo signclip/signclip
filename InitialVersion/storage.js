@@ -467,6 +467,7 @@ const Store = (() => {
       <small class="mut">Sciebo-Link: Ordner › Teilen › Link kopieren · Konto: https://HOCHSCHULE.sciebo.de/remote.php/webdav/ORDNER/</small>
       <small class="tg-g">${arr('← Speichern und prüfen · ↓ Abbrechen')}</small></div>`;
     el.innerHTML = rows + fm
+      + (form ? '' : `<div class="tg-new" data-imp="1">${ic('add', 18)}<b>Videos importieren</b><small>${arr('→ von Gerät, iCloud, Sciebo …')}</small></div>`)
       + (form ? '' : `<div class="tg-new" data-n="1">${ic('add', 18)}<b>Neuer Speicherort</b><small>${arr('→ Cloud / Link' + (window.showDirectoryPicker ? ' · weit → Ordner' : ''))}</small></div>`)
       + `<p class="tg-g">${list().length ? arr('↓ Entfernen · ↑ Teilen-Menü · ← Prüfen + immer speichern · → Teilen / Einbinden · 2× Ändern') : 'Noch kein Speicherort: Aufnahmen bleiben nur in der App.'}</p>`;
   }
@@ -480,6 +481,7 @@ const Store = (() => {
   }
   function label(r, dx, dy, W) {
     const ax = Math.abs(dx), ay = Math.abs(dy); if (Math.max(ax, ay) < 40) return '';
+    if (r.dataset.imp) return dx > 40 && ax > ay ? 'Videos auswählen' : '';
     if (r.dataset.n) return dx > 40 && ax > ay ? (dx > W * .45 && window.showDirectoryPicker ? 'Ordner auf dem Gerät' : 'Cloud / Freigabe-Link') : '';
     if (r.dataset.f) return ay > ax ? (dy > 0 ? 'Abbrechen' : '') : dx < 0 ? 'Speichern und prüfen' : '';
     if (r.dataset.s) return ay > ax ? (dy > 0 ? 'Ausblenden' : 'Ins Teilen-Menü') : dx < 0 ? 'Immer speichern' : '';
@@ -488,6 +490,7 @@ const Store = (() => {
   let lastTap = { id: '', t: 0 };
   async function act(r, dx, dy, W) {
     const ax = Math.abs(dx), ay = Math.abs(dy), tap = ax < 10 && ay < 10, what = label(r, dx, dy, W);
+    if (r.dataset.imp) { if (what || tap) pickImport(); return }
     if (r.dataset.n) {
       if (what === 'Ordner auf dem Gerät') { await addDir({ auto: true }); renderSettings() }
       else if (what) { form = {}; renderSettings(); document.getElementById('tUrl')?.focus() }
@@ -536,6 +539,40 @@ const Store = (() => {
     try { if (navigator.share && /Mobi|Android|iPhone|iPad/.test(navigator.userAgent)) { await navigator.share({ text: txt }); return } } catch (e) { return }
     try { await navigator.clipboard.writeText(txt); toast(msg || 'Kopiert') } catch (e) { prompt('Kopieren:', txt) }
   }
+  // Nachträglich übernehmen: alle Videos (mit Begleitdatei) eines Speicherorts in die Speicherorte mit „immer speichern“
+  async function copyAll(t) {
+    const dest = list().filter(a => a.auto && a.id !== t.id); if (!dest.length) { toast('Kein Speicherort mit „immer speichern“'); return }
+    await scan(t);
+    const src = clips.filter(c => c.lib && c.tid === t.id);
+    if (!src.length) { toast(t.name + ': keine Videos gefunden'); return }
+    let n = 0, k = 0, bad = 0;
+    for (const c of src) {
+      k++; toast(`Übernehme ${k}/${src.length} …`);
+      for (const a of dest) {
+        const up = UP[a.id] ||= {}, key = 'lib:' + (c.src || c.file);
+        if (up[key]) continue;
+        try { await saveClip(a, c); up[key] = 1; upSave(); n++ } catch (e) { bad++ }
+      }
+    }
+    toast(`${src.length} Videos übernommen nach ${dest.map(a => a.name).join(', ')}` + (bad ? ` · ${bad} fehlgeschlagen` : ''));
+  }
+  // Videos von überall (Gerät, iCloud, Sciebo-App, Dateien) importieren – über die App, also im SignClip-Format
+  function pickImport() {
+    const i = document.createElement('input'); i.type = 'file'; i.multiple = true; i.accept = 'video/*,.mp4,.mov,.m4v,.webm';
+    i.onchange = () => importFiles([...i.files]); i.click();
+  }
+  async function importFiles(files) {
+    const vids = files.filter(f => /^video\//.test(f.type) || /\.(mp4|mov|m4v|webm)$/i.test(f.name)); if (!vids.length) return;
+    const meta = f => new Promise(r => { const v = document.createElement('video'); v.preload = 'metadata'; v.muted = true; v.src = URL.createObjectURL(f); v.onloadedmetadata = () => { r({ d: v.duration || 5, w: v.videoWidth, h: v.videoHeight, url: v.src }) }; v.onerror = () => r({ d: 5, url: v.src }); setTimeout(() => r({ d: 5, url: v.src }), 4000) });
+    for (const f of vids) {
+      const m = await meta(f), title = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Import', ext = (f.name.match(/\.([a-z0-9]+)$/i) || [, 'mp4'])[1].toLowerCase();
+      const c = { id: N++, title, date: f.lastModified || Date.now(), s: 0, dur: isFinite(m.d) ? m.d : 5, url: m.url, blob: f, w: m.w, h: m.h, hue: Math.random() * 360 | 0, ctx: [{ t: 0, m: 1, x: title }], mk: [], imported: 1 };
+      c.file = fileName(c).replace(/\.[a-z0-9]+$/i, '.' + ext);
+      clips.push(c); genThumb(c);
+    }
+    render(); toast(vids.length + ' Video' + (vids.length > 1 ? 's' : '') + ' importiert'); await flush(0);
+  }
+
   function shareSheet(t) {
     const s = document.getElementById('ss'), i = ncInfo(t), tile = (k, ico, ti, sub) => `<div class="tile" data-x="${k}"><span>${ic(ico)}</span><div><b>${ti}</b><small>${sub}</small></div></div>`;
     if (typeof closeSheets === 'function') closeSheets();
@@ -544,6 +581,7 @@ const Store = (() => {
       + (i ? tile('sciebo', 'folder_shared', 'In Sciebo anzeigen', 'nur lesend · in Sciebo einmal „Annehmen“')
         + `<div class="tg-sid" style="display:none"><input type="text" id="sid" placeholder="Sciebo-ID, z. B. name@uni-xy.sciebo.de" value="${esc(LS.get('scieboId', ''))}"><div class="tile" data-x="sciebo-go"><span>${ic('share')}</span><div><b>Nur lesend teilen</b><small>Freigabe aus ${esc(i.base.replace(/^https?:\/\//, ''))}</small></div></div></div>`
         + tile('link', 'share', 'Link zum Ansehen', 'nur lesen · per Messenger, Mail, QR') : '')
+      + (!t.auto && list().some(a => a.auto && a.id !== t.id) ? tile('take', 'save', 'In meine Speicherorte übernehmen', 'alle Videos mit Kontext kopieren nach: ' + esc(list().filter(a => a.auto && a.id !== t.id).map(a => a.name).join(', '))) : '')
       + (t.kind !== 'dir' ? tile('dav', 'cloud', t.kind === 'share' ? 'Freigabe-Link kopieren' : 'WebDAV-Adresse kopieren', t.kind === 'share' ? 'zum Einbinden in eine andere Nextcloud' : 'für Finder, Explorer, Datei-Apps, rclone') : '')
       + (t.kind === 'dir' ? '<p class="mut">Ordner auf dem Gerät: Teilen über das Teilen-Menü einer Aufnahme.</p>' : '');
     s.onclick = async e => {
@@ -558,6 +596,7 @@ const Store = (() => {
       }
       if (k === 'link') { try { const d = await ncShare(t, { type: 3, perm: 1 }); if (!d.url) throw new Error('kein Link erhalten'); await copy(d.url, 'Link kopiert (nur lesen)') } catch (err) { toast('Link: ' + err.message) } return }
       if (k === 'dav') copy(t.kind === 'share' ? t.url : ep(t), 'Adresse kopiert');
+      if (k === 'take') { if (typeof closeSheets === 'function') closeSheets(); copyAll(t) }
     };
     s.classList.add('on');
   }
@@ -566,7 +605,7 @@ const Store = (() => {
 
   return {
     all: list, get, idb, boot, perm, refresh, flush, saveClip, putExtra, addDir, fetchClip, isSaved,
-    renderSettings, bind, openForm, kindLabel: t => KIND[t.kind], icon, parseShare, check, scan, ncInfo, readJoin, discover, shareSheet,
+    renderSettings, bind, openForm, kindLabel: t => KIND[t.kind], icon, parseShare, check, scan, ncInfo, readJoin, discover, shareSheet, importFiles, pickImport, copyAll,
     hasAuto: () => list().some(t => t.auto)
   };
 })();

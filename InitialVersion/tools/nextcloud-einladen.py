@@ -9,6 +9,7 @@ Pro Person entsteht:
   * optional eine Nur-Lese-Freigabe an eine Sciebo-ID (erscheint in Sciebo nach „Annehmen“)
   * ein Einladungslink: in der App einmal öffnen → Speicherort fertig (jede Aufnahme wird dort gespeichert)
   * eine Einladungsseite mit QR-Code zum Ausdrucken oder Weiterleiten
+  * mit Lese-Konto: zweiter Link/QR (nc://login/…), verbindet Nextcloud-App oder Desktop-Client mit einem Klick (nur lesen)
 
 Gruppen: Schreib-Konten kommen in <gruppe>-app, Lese-Konten in <gruppe>.
 Für einen gemeinsamen Gruppenordner in Nextcloud (App „Team folders“/„Group folders“):
@@ -80,8 +81,9 @@ class NC:
             raise RuntimeError(f'Gruppe {g}: {msg or st}')
 
     # --- Konten ---
-    def ensure_user(self, uid, display, groups, quota=None, email=None, password=None):
-        """Legt an oder setzt (bei bestehendem Konto) Passwort und Gruppen neu. Gibt das Passwort zurück (oder None bei Begrüßungs-Mail)."""
+    def ensure_user(self, uid, display, groups, quota=None, email=None, password=None, reset=True):
+        """Legt an oder ergänzt ein bestehendes Konto. Gibt (passwort, neu_angelegt) zurück.
+        reset=True setzt bei bestehendem Konto das Passwort neu (nur für das versteckte Schreib-Konto)."""
         pw = password
         data = {'userid': uid, 'displayName': display, 'groups[]': groups}
         if pw is not None:
@@ -93,17 +95,17 @@ class NC:
         st, j, _ = self.call('POST', '/ocs/v1.php/cloud/users?format=json', data=data)
         code, msg, _ = self.ocs(j)
         if code in (100, 200):
-            return pw
+            return pw, True
         if code != 102:
             raise RuntimeError(f'Konto {uid}: {msg or st}')
         # existiert schon: Passwort, Kontingent, Gruppen nachziehen
-        if pw is not None:
+        if pw is not None and reset:
             self._edit(uid, 'password', pw)
         if quota:
             self._edit(uid, 'quota', quota)
         for g in groups:
             self.call('POST', f'/ocs/v1.php/cloud/users/{urllib.parse.quote(uid)}/groups?format=json', data={'groupid': g})
-        return pw
+        return (pw if reset else None), False
 
     def _edit(self, uid, key, value):
         st, j, _ = self.call('PUT', f'/ocs/v1.php/cloud/users/{urllib.parse.quote(uid)}?format=json', data={'key': key, 'value': value})
@@ -154,11 +156,17 @@ def join_link(app_url, dav_url, user, apppw, name):
 
 def invite_html(person, link, reader_info):
     n = html.escape(person['name'] or person['user'])
-    extra = ''
-    if reader_info:
-        extra = f"<p>Zum Ansehen im Browser oder mit der Nextcloud-App: Konto <b>{html.escape(reader_info['user'])}</b>" + \
-                (" – das Passwort legst du über die Begrüßungs-Mail fest." if reader_info.get('mail') else
-                 f", Start-Passwort <code>{html.escape(reader_info['pw'])}</code> (bitte nach dem ersten Anmelden ändern).") + "</p>"
+    extra, qr2 = '', ''
+    if reader_info and not reader_info.get('nc'):
+        extra = f"<p>Zum Ansehen: Nextcloud-Konto <b>{html.escape(reader_info['user'])}</b> (besteht bereits).</p>"
+    elif reader_info:
+        extra = f"""<h2>Deine Aufnahmen auf Handy, Tablet und Computer</h2>
+<p>Mit der <b>Nextcloud-App</b> (iPhone/iPad: erscheint danach auch in der Dateien-App neben iCloud) oder dem <b>Nextcloud-Desktop-Client</b>
+siehst du deinen Ordner überall, nur lesend. Code in der Nextcloud-App scannen oder Link auf dem Computer anklicken:</p>
+<div id="qr2"></div><p><a href="{html.escape(reader_info['nc'])}">Nextcloud verbinden</a> (Konto <b>{html.escape(reader_info['user'])}</b>)</p>""" + \
+            ("<p>Für die Nextcloud-Webseite legst du dein Passwort über die Begrüßungs-Mail fest.</p>" if reader_info.get('mail') else
+             f"<p>Nextcloud-Webseite: Start-Passwort <code>{html.escape(reader_info['pw'])}</code> (bitte nach dem ersten Anmelden ändern).</p>")
+        qr2 = f"new QRCode(document.getElementById('qr2'),{{text:{json.dumps(reader_info['nc'])},width:200,height:200,correctLevel:QRCode.CorrectLevel.L}});"
     return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Einladung SignClip</title>
 <style>body{{font:16px/1.5 system-ui,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#222}}h1{{font-weight:500}}
@@ -168,9 +176,9 @@ def invite_html(person, link, reader_info):
 <div id="qr"></div>
 <p><a href="{html.escape(link)}">SignClip öffnen und verbinden</a></p>
 {extra}
-<p class="w">Dieser Link ist dein persönlicher Zugang. Bitte nicht weitergeben.</p>
+<p class="w">Diese Links sind dein persönlicher Zugang. Bitte nicht weitergeben.</p>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>try{{new QRCode(document.getElementById('qr'),{{text:{json.dumps(link)},width:240,height:240,correctLevel:QRCode.CorrectLevel.L}})}}catch(e){{}}</script>
+<script>try{{new QRCode(document.getElementById('qr'),{{text:{json.dumps(link)},width:240,height:240,correctLevel:QRCode.CorrectLevel.L}});{qr2}}}catch(e){{}}</script>
 </body></html>"""
 
 
@@ -191,10 +199,17 @@ def invite(nc, p, a):
     reader_info = None
     if p.get('reader'):
         mail = bool(p.get('email'))
-        rpw = None if mail else rand_pw(14)
-        nc.ensure_user(user, p['name'] or user, groups, None, p.get('email'), rpw)
+        rpw, created = nc.ensure_user(user, p['name'] or user, groups, None, p.get('email'), rand_pw(14), reset=False)
         nc.share(writer, wpw, a.folder, 0, user, 1)
-        reader_info = {'user': user, 'mail': mail, 'pw': rpw}
+        reader_info = {'user': user, 'mail': mail, 'pw': None, 'nc': None}
+        if created:
+            # eigenes App-Passwort fürs Lese-Konto: Nextcloud-App / Desktop-Client mit einem Klick verbinden (nur lesen)
+            rap = nc.app_password(user, rpw)
+            reader_info['nc'] = f'nc://login/user:{user}&password:{rap}&server:{nc.s}'
+            if mail:
+                nc.call('POST', f'/ocs/v1.php/cloud/users/{urllib.parse.quote(user)}/welcome?format=json')  # Begrüßungs-Mail: eigenes Passwort fürs Web
+            else:
+                reader_info['pw'] = rpw
     if p.get('sciebo_id'):
         nc.share(writer, wpw, a.folder, 6, p['sciebo_id'], 1)
     dav_url = nc.dav(writer, a.folder)

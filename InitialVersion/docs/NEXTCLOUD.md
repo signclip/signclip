@@ -72,6 +72,14 @@ Verwaltung › Externe Speicher › neuer Eintrag:
 - Anmeldung: Benutzername und Passwort = Sciebo-Benutzer + **Sciebo-App-Passwort** (in Sciebo unter Einstellungen › Sicherheit erzeugen)
 - Verfügbar für: nur das Schreib-Konto dieser Person, z. B. `anna-app`
 
+### 5.3 Ordner, den jemand in Sciebo mit dir geteilt hat
+Links wie `https://uni-koeln.sciebo.de/apps/files_sharing/accept/ocinternal:…` sind **keine öffentlichen Freigabe-Links**, sondern die Annahme einer Freigabe **an dein Sciebo-Konto**. Ablauf:
+1. Link öffnen, bei Sciebo anmelden, Freigabe annehmen → der Ordner liegt jetzt in deinem Sciebo.
+2. Dein Sciebo-Konto wie in 5.2 einbinden (für dein Schreib-Konto, z. B. `name-app`).
+3. In der App erscheint der geteilte Ordner als Vorschlag `Sciebo › Ordnername` („In Sciebo“). Nach links ziehen = **jede Aufnahme automatisch auch dorthin**.
+
+Voraussetzung: Die Freigabe erlaubt Bearbeiten/Hochladen.
+
 In der App erscheinen eingebundene Ordner als Vorschlag („Eingebunden“). Nach links ziehen = jede Aufnahme auch dorthin, nach oben = im Teilen-Menü.
 
 Hinweise: Zugriffe laufen über die Nextcloud zu Sciebo (langsamer). Änderungen direkt in Sciebo sieht die Nextcloud beim nächsten Zugriff. Sciebo-Zugangsdaten liegen in der Nextcloud – das den Personen sagen. Nutzungsbedingungen der Hochschule prüfen.
@@ -83,6 +91,15 @@ Hinweise: Zugriffe laufen über die Nextcloud zu Sciebo (langsamer). Änderungen
   - Karte **→** = Teilen / Einbinden: **In Sciebo anzeigen** (nur lesend, in Sciebo einmal annehmen), **Link zum Ansehen** (nur lesen), **WebDAV-Adresse kopieren**
   - **←** immer speichern · **↑** ins Teilen-Menü · **↓** entfernen · **2×** ändern
   - gestrichelte Karten = gefundene Ordner (Gruppenordner, eingebundenes Sciebo, mit dir geteilt)
+
+### Mit einem Klick woanders verfügbar
+- **In Sciebo:** Karte → *In Sciebo anzeigen* (nur lesend, in Sciebo einmal annehmen).
+- **Auf Handy, Tablet, Computer:** Die Einladungsseite enthält mit `--reader` einen zweiten Code/Link (`nc://login/…`). Nextcloud-App: Code scannen; Computer mit Nextcloud-Desktop-Client: Link anklicken. Auf iPhone/iPad erscheint der Ordner danach auch in der **Dateien-App** neben iCloud. Nur lesend.
+- **Als Laufwerk:** Karte → *WebDAV-Adresse kopieren* (Finder, Explorer, Datei-Apps, rclone).
+
+### Nachträglich übertragen (nur über die App)
+- **Von Gerät, iCloud, Sciebo-App, Dateien:** Speicherorte › *Videos importieren* → nach rechts ziehen → Videos auswählen. Die App legt Begleitdatei (Kontext aus dem Dateinamen) an und speichert in alle Orte mit „immer speichern“.
+- **Aus einem anderen Speicherort** (Sciebo-Ordner, Gruppenordner, Freigabe-Link): Karte → *In meine Speicherorte übernehmen* → alle Videos mit Kontext werden kopiert. Erneutes Übernehmen lädt nichts doppelt hoch.
 
 ## 7. Testtag (vor dem Start abhaken)
 
@@ -96,6 +113,9 @@ Hinweise: Zugriffe laufen über die Nextcloud zu Sciebo (langsamer). Änderungen
 - [ ] Ganzes Sciebo-Konto (5.2) eingebunden
 - [ ] „In Sciebo anzeigen“: Freigabe kommt in Sciebo an, „Annehmen“ funktioniert (Sciebo muss fremde Server zulassen)
 - [ ] „Link zum Ansehen“: Link öffnet sich ohne Anmeldung, nur lesen
+- [ ] Sciebo-Freigabe per Annahme-Link (`…/accept/ocinternal:…`) annehmen, Konto einbinden, Ordner in der App „immer speichern“
+- [ ] Einladungsseite: `nc://login`-Code in der Nextcloud-App (iOS/Android) und Link im Desktop-Client
+- [ ] Videos importieren (iPhone: Auswahl aus iCloud Drive und Sciebo-App), In meine Speicherorte übernehmen
 - [ ] Wenn CORS (Zeile 3) oder Sciebo-Einbindung (Zeile 7/8) scheitert: kleine eigene Nextcloud statt Storage Share, gleiches Vorgehen
 
 Getestet ist alles gegen eine Nextcloud-Attrappe (Konten, App-Passwort, Freigaben, Ordnerarten, CORS wie WebAppPassword). Am echten Storage Share und an Sciebo steht der Test noch aus.
