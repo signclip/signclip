@@ -104,6 +104,7 @@
       <span class="badge mnt">⇄ eingebunden</span> externer Speicher ·
       <span class="badge out">→ an andere Cloud</span> von mir freigegeben (ob dort schon angenommen, sieht die Nextcloud nicht)</p>
     <button id="bList">Ordner laden</button>
+    <button id="bWriteTest">Schreibtest (angehakte Ordner)</button>
     <div id="targets" class="tree"></div>
   </details>
 
@@ -455,6 +456,24 @@ async function renderTargets() {
   log(`${tree.length} Ordner geladen: ${n("out")} von dir freigegeben, ${n("in")} mit dir geteilt, ${n("mnt")} eingebunden.`, "ok");
 }
 $("#bList").onclick = () => renderTargets().catch(e => log(e.message, "err"));
+
+// Schreibtest: kleine Datei hineinlegen und sofort wieder löschen. Zeigt, ob in einen Ordner gespeichert werden kann –
+// wichtig bei Ordnern, die mit dir geteilt oder eingebunden sind (z. B. Sciebo nur mit Leserecht).
+$("#bWriteTest").onclick = async () => {
+  if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
+  const targets = getTargets();
+  if (!targets.length) return log("Kein Ordner angehakt.", "err");
+  for (const t of targets) {
+    const f = `${t}/.sign-schreibtest-${Date.now()}.txt`;
+    try {
+      await put(f, new Blob(["Sign Schreibtest – wird sofort gelöscht"], { type: "text/plain" }), "text/plain");
+      try { await req("DELETE", davRoot(acc) + "/" + encPath(f)); } catch { log(`„${t}“: Testdatei konnte nicht gelöscht werden – bitte von Hand entfernen: ${f}`, "err"); }
+      log(`„${t}“: Speichern möglich.`, "ok");
+    } catch (e) {
+      log(`„${t}“: Speichern NICHT möglich (${e.message}). Bei geteilten Ordnern fehlt meist das Recht „Bearbeiten/Hochladen“.`, "err");
+    }
+  }
+};
 
 // ───────────────────────── 4a. Nextcloud-Ordner in Sciebo sichtbar machen ─────────────────────────
 $("#sFed").onchange = () => store.set("scieboId", $("#sFed").value.trim());
