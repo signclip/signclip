@@ -16,7 +16,7 @@ Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärde
 
 ## Erste Version (`InitialVersion/`)
 
-Eine PWA ohne Build-Schritt: `index.html`, `storage.js`, Service Worker, WebDAV-Proxy. Aufnehmen, Kontext vergeben, suchen, schneiden, zusammenfügen und per Ordner, Nextcloud/Sciebo oder Freigabelink speichern. Die Konzeptdokumente der ersten Version liegen im selben Ordner ([READme.md](InitialVersion/READme.md), [ARCHITECTURE.md](InitialVersion/ARCHITECTURE.md)).
+Eine PWA ohne Build-Schritt: `index.html`, `storage.js`, Service Worker, WebDAV-Proxy, Einladungs-Skript für die eigene Nextcloud ([NEXTCLOUD.md](InitialVersion/docs/NEXTCLOUD.md)). Aufnehmen, Kontext vergeben, suchen, schneiden, zusammenfügen und per Ordner, Nextcloud/Sciebo oder Freigabelink speichern. Die Konzeptdokumente der ersten Version liegen im selben Ordner ([READme.md](InitialVersion/READme.md), [ARCHITECTURE.md](InitialVersion/ARCHITECTURE.md)).
 
 Wichtig beim Hosting: Alle Pfade sind relativ, die App funktioniert also weiter, nur unter `…/InitialVersion/index.html`. Wer sie bisher über die Hauptadresse installiert hat, muss die neue Adresse öffnen und neu installieren.
 

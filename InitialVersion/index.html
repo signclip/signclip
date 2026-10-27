@@ -201,6 +201,8 @@ body.talking #stage{box-shadow:0 0 0 3px #5fbf92}.cf.talk{outline:2px solid #5fb
 .tg-f{display:flex;flex-direction:column;gap:2px;outline:2px dashed var(--mc)}.tg-f small{display:block;margin:4px 0}.tg-f details{margin:4px 0;color:var(--mut)}
 .tg-new{position:relative;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:99px;border:1.5px dashed var(--mut);color:var(--fg);touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .2s}.tg-new small{margin-left:auto;color:var(--mut);display:flex;align-items:center;gap:3px}
 .tg-new.drag{transition:none}.tg-new[data-g]::after{content:attr(data-g);position:absolute;top:-10px;right:10px;background:var(--fg);color:var(--bg);font-size:11px;padding:2px 9px;border-radius:99px}
+.tg-sug{background:transparent;outline:1.5px dashed var(--mut);outline-offset:-2px}.tg-sug .tg-h small{white-space:normal}
+.tg-sid{margin:2px 0 6px 40px}
 .tg-g{font-size:11px;color:var(--mut);display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin:2px 4px}
 .seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.seg span{padding:6px 12px;border-radius:99px;border:1px solid var(--line);color:var(--fg);display:inline-flex;flex-direction:column;align-items:center;gap:3px;font-size:12px}
 .seg span i{display:block;border:1.5px solid currentColor;border-radius:2px}.seg span.on{background:var(--mc);border-color:transparent;color:#1d1b20}
@@ -652,6 +654,7 @@ function edgeHints(){const m=MAP[CTX()]||{},L=k=>{const a=m[k];return a&&a[0]&&A
 {const sw=(el,g,sg)=>{let y=null;el.addEventListener('touchstart',e=>y=e.touches[0].clientY,{passive:true});el.addEventListener('touchend',e=>{if(y==null)return;const dy=e.changedTouches[0].clientY-y;y=null;if(sg*dy>40)ed2(g)});el.addEventListener('click',()=>{})};sw($('#gt'),'Rand↓',1);sw($('#gb'),'Rand↑',-1)}
 function firstRun(){closeSheets();$('#ss').innerHTML=`<h2>Wo sollen Videos gespeichert werden?</h2><p class="mut">Jede Aufnahme wird danach sofort dort abgelegt.</p><div class="tile" onclick="ls.set('setup',1);closeSheets();Store.addDir({auto:true})"><span>${ic('folder')}</span><div><b>Ordner auf dem Gerät</b><small>Android, Chrome, Desktop</small></div></div><div class="tile" onclick="ls.set('setup',1);closeSheets();$('#gear').click();Store.openForm('dav')"><span>${ic('cloud')}</span><div><b>Nextcloud / Sciebo</b><small>Konto per WebDAV</small></div></div><div class="tile" onclick="ls.set('setup',1);closeSheets();$('#gear').click();Store.openForm('share')"><span>${ic('folder_shared')}</span><div><b>Freigegebener Ordner</b><small>Sciebo-/Nextcloud-Link einer Gruppe</small></div></div><div class="tile" onclick="ls.set('setup',1);closeSheets()"><span>${ic('phone')}</span><div><b>Später</b><small>Videos bleiben in der App. Teilen → Dateien / iCloud</small></div></div>`;$('#ss').classList.add('on')}
 document.addEventListener('pointerdown',()=>{if(!camOK)initCam()});document.addEventListener('visibilitychange',()=>{if(!document.hidden)initCam()});
+if(Store.readJoin(location.hash))ls.set('setup',1);
 if(!ls.get('setup',0))setTimeout(firstRun,800);
 $('#dz').innerHTML=ic('delete',22);
 let daField=ls.get('daField',''),awOpen=false,savedSearch=null;

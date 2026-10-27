@@ -27,8 +27,10 @@ Parallel läuft die Spur **Partner und Anbieter** (ab Etappe 3 mit Entscheidung)
 
 **Ziel:** Das Konzept lernen und erklären, die ersten Aufnahmen in der eigenen Nextcloud ablegen und wiederfinden. Alles, was nicht ausdrücklich zu Etappe 2 gehört, gehört hierher.
 
-- Jede Person bekommt in der eigenen Nextcloud einen eigenen Bereich. Das trägt schon am Start.
-- Aufnehmen, speichern und wiederfinden im Browser (PWA). Die App und lokales Speichern kommen in Etappe 2.
+- **Speicher:** Nextcloud bei Hetzner (Storage Share, 1 TB), Erweiterung in Wellen (5 TB, 10 TB). Einrichtung, Einladungs-Skript und Testliste: [InitialVersion/docs/NEXTCLOUD.md](../InitialVersion/docs/NEXTCLOUD.md).
+- Jede Person bekommt in der eigenen Nextcloud einen eigenen Bereich, per Einladungslink mit einem Tippen in der App. Hinein kommt Inhalt nur über die App (Schreib-Konto), ansehen und weitergeben geht überall (Lese-Konto, Links, Sciebo).
+- Aufnehmen, speichern und wiederfinden im Browser (PWA, `InitialVersion/`). Bis zur App werden Videos (und später Landmarks) vollständig in der Nextcloud gespeichert. Die App und lokales Speichern kommen in Etappe 2.
+- **Sciebo in beide Richtungen:** Sciebo-Freigaben und -Konten werden in der Nextcloud eingebunden und erscheinen in der App als Speicherorte; Nextcloud-Ordner lassen sich per Wisch in Sciebo sichtbar machen (nur lesend).
 - **Ressourcen privat:** Schon hier können Einzelne Ressourcen geben, und vor allem werden **Anträge vorangetrieben** (z. B. Hochschulrechenzeit, Förderung). Der Bereich „Beitragen“ ist freiwillig, ohne Zähler, und erklärt, wohin es geht. Konzept: `infrastructure.md`, Abschnitt 8. Rechtsform und Spendenfragen vorher klären.
 - **Vorher testen** (aus `architektur.md`, Testtag): CORS für die Browser-App, Sciebo als externer Speicher, föderiertes Teilen, Schreib- und Lese-Konto, Einladungslink.
 

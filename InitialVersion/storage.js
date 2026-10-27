@@ -100,6 +100,35 @@ const Store = (() => {
   const httpErr = s => s === 401 ? 'Anmeldung abgelehnt' : s === 403 ? 'Kein Schreibrecht' : s === 404 ? 'Ordner nicht gefunden'
     : s === 507 ? 'Speicher voll' : s === 413 ? 'Datei zu groß' : 'HTTP ' + s;
 
+  // ---------- Nextcloud ----------
+  // Erkennt …/remote.php/dav/files/<benutzer>/<ordner>/ und …/remote.php/webdav/<ordner>/
+  function ncInfo(t) {
+    if (!t || t.kind !== 'dav') return null;
+    try {
+      const u = new URL(ep(t));
+      let m = u.pathname.match(/^(.*?)\/remote\.php\/dav\/files\/([^/]+)(\/.*)?$/);
+      if (m) return { base: u.origin + m[1], user: decodeURIComponent(m[2]), path: decodeURIComponent(m[3] || '/').replace(/\/$/, '') || '/', root: u.origin + m[1] + '/remote.php/dav/files/' + m[2] + '/' };
+      m = u.pathname.match(/^(.*?)\/remote\.php\/webdav(\/.*)?$/);
+      if (m) return { base: u.origin + m[1], user: t.user, path: decodeURIComponent(m[2] || '/').replace(/\/$/, '') || '/', root: u.origin + m[1] + '/remote.php/webdav/' };
+    } catch (e) {}
+    return null;
+  }
+  // Freigabe über die Nextcloud-Schnittstelle (im Browser über WebAppPassword, das CORS dafür erlaubt)
+  async function ncShare(t, o) {
+    const i = ncInfo(t); if (!i) throw new Error('Kein Nextcloud-Ordner');
+    const body = new URLSearchParams({ path: o.path || i.path, shareType: String(o.type), permissions: String(o.perm ?? 1) });
+    if (o.with) body.set('shareWith', o.with); if (o.password) body.set('password', o.password);
+    let r;
+    try {
+      r = await req(t, 'POST', i.base + '/index.php/apps/webapppassword/api/v1/shares?format=json',
+        { body, h: { 'OCS-APIRequest': 'true', Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' } });
+    } catch (e) { throw new Error('Keine Verbindung – in Nextcloud bei WebAppPassword die App-Adresse unter „Files sharing origins“ eintragen') }
+    let j = null; try { j = await r.json() } catch (e) {}
+    const meta = j && j.ocs && j.ocs.meta;
+    if (!r.ok || (meta && meta.statuscode >= 400 && meta.statuscode !== 100)) throw new Error((meta && meta.message) || httpErr(r.status));
+    return (j && j.ocs && j.ocs.data) || {};
+  }
+
   // ---------- Prüfen ----------
   async function check(t, quiet) {
     if (t.kind === 'dir') {
@@ -275,6 +304,39 @@ const Store = (() => {
     const del = before - clips.length;
     if (add || chg || del) toast(t.name + ': ' + add + ' neu, ' + chg + ' geändert, ' + del + ' entfernt');
   }
+  // Ordner im Nextcloud-Konto finden: Gruppenordner, eingebundene Speicher (z. B. Sciebo), mit mir geteilt
+  const FOUND = {}, HIDE = new Set(LS.get('hideFound', []));
+  const NCT = { group: 'Gruppenordner', external: 'Eingebunden (z. B. Sciebo)', 'external-session': 'Eingebunden (z. B. Sciebo)', shared: 'Mit dir geteilt', 'shared-root': 'Mit dir geteilt' };
+  async function discover(t) {
+    const i = ncInfo(t); if (!i) return;
+    // pro Konto nur einmal suchen: beim ersten Speicherort dieses Kontos
+    const first = list().find(x => { const k = ncInfo(x); return k && k.root === i.root && (x.user || '') === (t.user || '') });
+    if (first && first.id !== t.id) { delete FOUND[t.id]; return }
+    const PF2 = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:" xmlns:nc="http://nextcloud.org/ns" xmlns:oc="http://owncloud.org/ns"><d:prop><d:resourcetype/><nc:mount-type/><oc:share-types/></d:prop></d:propfind>';
+    try {
+      const r = await req(t, 'PROPFIND', i.root, { h: { Depth: '1', 'Content-Type': 'application/xml' }, body: PF2 });
+      if (r.status !== 207) return;
+      const doc = new DOMParser().parseFromString(await r.text(), 'application/xml'), base = new URL(i.root);
+      const have = new Set(list().map(x => ep(x)));
+      const all = [...doc.getElementsByTagNameNS('DAV:', 'response')].map(x => {
+        const href = (x.getElementsByTagNameNS('DAV:', 'href')[0] || {}).textContent || '', url = new URL(href, base).href.replace(/\/?$/, '/');
+        const mt = ((x.getElementsByTagNameNS('http://nextcloud.org/ns', 'mount-type')[0] || {}).textContent || '').trim();
+        return { url, name: decodeURIComponent(url.split('/').filter(Boolean).pop() || ''), type: NCT[mt] || 'Ordner', special: !!NCT[mt], dir: !!x.getElementsByTagNameNS('DAV:', 'collection').length };
+      }).filter(f => f.dir && f.url !== base.href);
+      const anySpecial = all.some(f => f.special), open = all.filter(f => !have.has(f.url) && !HIDE.has(f.url));
+      // besondere Ordner (Gruppe, eingebunden, geteilt) immer vorschlagen; normale nur, wenn es keine besonderen gibt und es wenige sind
+      FOUND[t.id] = (anySpecial ? open.filter(f => f.special) : open.length <= 4 ? open : []).slice(0, 8);
+      renderSettings();
+    } catch (e) {}
+  }
+  async function adopt(t, f, auto) {
+    const n = { id: uid(), kind: 'dav', name: f.name, url: f.url, user: t.user, proxy: t.proxy || '', auto, lib: true };
+    list().push(n); save(); await setPw(n, PW[t.id] || '');
+    FOUND[t.id] = (FOUND[t.id] || []).filter(x => x !== f); delete FOUND[n.id]; renderSettings();
+    if (await check(n)) { scan(n); if (auto) flush(1) }
+    toast(f.name + (auto ? ': immer speichern' : ': im Teilen-Menü'));
+  }
+
   async function scan(t) {
     if (!t.lib) return;
     try { if (t.kind === 'dir') await scanDir(t); else await scanDav(t) } catch (e) { status(t, 'Bibliothek: ' + e.message, 1) }
@@ -304,7 +366,7 @@ const Store = (() => {
     if (!t) { t = { id: uid(), auto: d.kind !== 'share', lib: true }; list().push(t) }
     Object.assign(t, { kind: d.kind, name: d.name || (d.kind === 'share' ? 'Freigabe' : 'Cloud'), url: d.url, user: d.user || '', proxy: d.proxy || '' });
     save(); if (pw != null) await setPw(t, pw);
-    if (await check(t)) { scan(t); if (t.auto) flush(1) }
+    if (await check(t)) { scan(t); discover(t); if (t.auto) flush(1) }
     return t;
   }
   function remove(id) {
@@ -340,9 +402,25 @@ const Store = (() => {
   async function boot() {
     for (let i = 0; i < 40 && !db; i++) await new Promise(r => setTimeout(r, 200));
     await migrate(); await loadPw(); booted = true; renderSettings();
-    for (const t of list()) { if (await check(t, true)) scan(t) }
+    await join();
+    for (const t of list()) { if (await check(t, true)) { scan(t); discover(t) } }
     flush(2);
   }
+  // Einladungslink: …/index.html#join=<base64url(JSON {u, n, p, name})>  → Speicherort mit einem Tippen
+  function readJoin(h) {
+    const m = String(h || '').match(/[#&]join=([A-Za-z0-9_-]+)/); if (!m) return null;
+    try { const j = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))); return j && j.u ? j : null } catch (e) { return null }
+  }
+  async function join() {
+    const j = readJoin(location.hash); if (!j) return;
+    try { history.replaceState(null, '', location.pathname + location.search) } catch (e) { location.hash = '' }
+    const url = String(j.u).replace(/\/?$/, '/'), ex = list().find(x => x.kind === 'dav' && ep(x) === url);
+    toast('Einladung: verbinde ' + (j.name || 'Nextcloud') + ' …');
+    const t = await upsert({ id: ex && ex.id, kind: 'dav', url, user: j.n || '', name: j.name || 'Nextcloud', proxy: '' }, j.p || '');
+    if (!ex) { t.auto = true; save(); renderSettings() }
+    toast(ST[t.id] === 'Verbunden' ? t.name + ' verbunden · jede Aufnahme wird dort gespeichert' : t.name + ': ' + (ST[t.id] || 'nicht erreichbar'));
+  }
+
   // Ordnerrechte brauchen eine Berührung: beim ersten Antippen anfragen
   async function perm() {
     for (const t of list().filter(t => t.kind === 'dir' && H[t.id])) {
@@ -353,7 +431,7 @@ const Store = (() => {
       } catch (e) {}
     }
   }
-  async function refresh() { for (const t of list()) if (t.kind !== 'dir' && await check(t, true)) scan(t); flush(2) }
+  async function refresh() { for (const t of list()) if (t.kind !== 'dir' && await check(t, true)) { scan(t); discover(t) } flush(2) }
 
   // ---------- Einstellungen (Abschnitt SPEICHERORTE), nur Gesten ----------
   // Karte:  ↓ entfernen · ↑ ins Teilen-Menü · ← prüfen + immer speichern · 2× tippen ändern
@@ -368,7 +446,8 @@ const Store = (() => {
     const el = document.getElementById('stor'); if (!el) return;
     const rows = list().map(t => `<div class="tg-row${t.auto ? ' auto' : ''}" data-t="${t.id}">
       <div class="tg-h"><span>${ic(icon(t), 20)}</span><b>${esc(t.name)}</b><em>${t.auto ? 'Immer speichern' : 'Im Teilen-Menü'}</em><small>${esc(KIND[t.kind])} · ${esc(short(t))}</small></div>
-      <div class="tg-s ${/^(Verbunden|Bereit)/.test(ST[t.id] || '') ? 'ok' : ''}">${esc(ST[t.id] || (booted ? 'Nicht geprüft' : 'Lädt …'))}</div></div>`).join('');
+      <div class="tg-s ${/^(Verbunden|Bereit)/.test(ST[t.id] || '') ? 'ok' : ''}">${esc(ST[t.id] || (booted ? 'Nicht geprüft' : 'Lädt …'))}</div></div>`
+      + (FOUND[t.id] || []).map((f, k) => `<div class="tg-row tg-sug" data-s="${t.id}|${k}"><div class="tg-h"><span>${ic(/Eingebunden/.test(f.type) ? 'folder_shared' : 'folder', 18)}</span><b>${esc(f.name)}</b><em>${esc(f.type)}</em><small>${arr('in ' + esc(t.name) + ' gefunden · ← immer speichern · ↑ Teilen-Menü · ↓ ausblenden')}</small></div></div>`).join('')).join('');
     const v = form && form.id ? get(form.id) || {} : {};
     const fm = !form ? '' : `<div class="tg-row tg-f" data-f="1">
       <b>${form.id ? 'Speicherort ändern' : 'Neuer Speicherort'}</b>
@@ -381,7 +460,7 @@ const Store = (() => {
       <small class="tg-g">${arr('← Speichern und prüfen · ↓ Abbrechen')}</small></div>`;
     el.innerHTML = rows + fm
       + (form ? '' : `<div class="tg-new" data-n="1">${ic('add', 18)}<b>Neuer Speicherort</b><small>${arr('→ Cloud / Link' + (window.showDirectoryPicker ? ' · weit → Ordner' : ''))}</small></div>`)
-      + `<p class="tg-g">${list().length ? arr('↓ Entfernen · ↑ Teilen-Menü · ← Prüfen + immer speichern · 2× Ändern') : 'Noch kein Speicherort: Aufnahmen bleiben nur in der App.'}</p>`;
+      + `<p class="tg-g">${list().length ? arr('↓ Entfernen · ↑ Teilen-Menü · ← Prüfen + immer speichern · → Teilen / Einbinden · 2× Ändern') : 'Noch kein Speicherort: Aufnahmen bleiben nur in der App.'}</p>`;
   }
   async function saveForm() {
     const val = i => ((document.getElementById(i) || {}).value || '').trim();
@@ -395,7 +474,8 @@ const Store = (() => {
     const ax = Math.abs(dx), ay = Math.abs(dy); if (Math.max(ax, ay) < 40) return '';
     if (r.dataset.n) return dx > 40 && ax > ay ? (dx > W * .45 && window.showDirectoryPicker ? 'Ordner auf dem Gerät' : 'Cloud / Freigabe-Link') : '';
     if (r.dataset.f) return ay > ax ? (dy > 0 ? 'Abbrechen' : '') : dx < 0 ? 'Speichern und prüfen' : '';
-    return ay > ax ? (dy > 0 ? 'Entfernen' : 'Ins Teilen-Menü') : dx < 0 ? 'Prüfen + immer speichern' : '';
+    if (r.dataset.s) return ay > ax ? (dy > 0 ? 'Ausblenden' : 'Ins Teilen-Menü') : dx < 0 ? 'Immer speichern' : '';
+    return ay > ax ? (dy > 0 ? 'Entfernen' : 'Ins Teilen-Menü') : dx < 0 ? 'Prüfen + immer speichern' : 'Teilen / Einbinden';
   }
   let lastTap = { id: '', t: 0 };
   async function act(r, dx, dy, W) {
@@ -407,6 +487,12 @@ const Store = (() => {
       return;
     }
     if (r.dataset.f) { if (what === 'Abbrechen') { form = null; renderSettings() } else if (what) saveForm(); return }
+    if (r.dataset.s) {
+      const [tid, k] = r.dataset.s.split('|'), t0 = get(tid), f = t0 && (FOUND[tid] || [])[+k]; if (!f) return;
+      if (what === 'Ausblenden') { HIDE.add(f.url); LS.set('hideFound', [...HIDE]); FOUND[tid] = FOUND[tid].filter(x => x !== f); renderSettings() }
+      else if (what) adopt(t0, f, what === 'Immer speichern');
+      return;
+    }
     const t = get(r.dataset.t); if (!t) return;
     if (tap) {
       if (lastTap.id === t.id && Date.now() - lastTap.t < 350) { lastTap = { id: '', t: 0 }; if (t.kind === 'dir') repick(t); else { form = { id: t.id }; renderSettings() } }
@@ -415,6 +501,7 @@ const Store = (() => {
     }
     if (what === 'Entfernen') { remove(t.id); toast(t.name + ' entfernt · Dateien dort bleiben') }
     else if (what === 'Ins Teilen-Menü') setAuto(t, false);
+    else if (what === 'Teilen / Einbinden') shareSheet(t);
     else if (what) setAuto(t, true);
   }
   function bind(el) {
@@ -436,11 +523,42 @@ const Store = (() => {
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
     el.addEventListener('keydown', e => { if (e.key === 'Enter' && form && e.target.closest('.tg-f')) { e.preventDefault(); saveForm() } });
   }
+  // Teilen / Einbinden: Ordner in Sciebo sichtbar machen, Nur-Lese-Link, WebDAV-Adresse
+  async function copy(txt, msg) {
+    try { if (navigator.share && /Mobi|Android|iPhone|iPad/.test(navigator.userAgent)) { await navigator.share({ text: txt }); return } } catch (e) { return }
+    try { await navigator.clipboard.writeText(txt); toast(msg || 'Kopiert') } catch (e) { prompt('Kopieren:', txt) }
+  }
+  function shareSheet(t) {
+    const s = document.getElementById('ss'), i = ncInfo(t), tile = (k, ico, ti, sub) => `<div class="tile" data-x="${k}"><span>${ic(ico)}</span><div><b>${ti}</b><small>${sub}</small></div></div>`;
+    if (typeof closeSheets === 'function') closeSheets();
+    s.dataset.k = 'tgs';
+    s.innerHTML = `<h2>${esc(t.name)}</h2><p class="mut">Teilen und woanders einbinden</p>`
+      + (i ? tile('sciebo', 'folder_shared', 'In Sciebo anzeigen', 'nur lesend · in Sciebo einmal „Annehmen“')
+        + `<div class="tg-sid" style="display:none"><input type="text" id="sid" placeholder="Sciebo-ID, z. B. name@uni-xy.sciebo.de" value="${esc(LS.get('scieboId', ''))}"><div class="tile" data-x="sciebo-go"><span>${ic('share')}</span><div><b>Nur lesend teilen</b><small>Freigabe aus ${esc(i.base.replace(/^https?:\/\//, ''))}</small></div></div></div>`
+        + tile('link', 'share', 'Link zum Ansehen', 'nur lesen · per Messenger, Mail, QR') : '')
+      + (t.kind !== 'dir' ? tile('dav', 'cloud', t.kind === 'share' ? 'Freigabe-Link kopieren' : 'WebDAV-Adresse kopieren', t.kind === 'share' ? 'zum Einbinden in eine andere Nextcloud' : 'für Finder, Explorer, Datei-Apps, rclone') : '')
+      + (t.kind === 'dir' ? '<p class="mut">Ordner auf dem Gerät: Teilen über das Teilen-Menü einer Aufnahme.</p>' : '');
+    s.onclick = async e => {
+      const x = e.target.closest('[data-x]'); if (!x) return;
+      const k = x.dataset.x;
+      if (k === 'sciebo') { s.querySelector('.tg-sid').style.display = 'block'; s.querySelector('#sid').focus(); return }
+      if (k === 'sciebo-go') {
+        const id = s.querySelector('#sid').value.trim(); if (!/^[^@\s]+@[^@\s]+$/.test(id)) { toast('Sciebo-ID: name@hochschule.sciebo.de'); return }
+        LS.set('scieboId', id); toast('Teile mit ' + id + ' …');
+        try { await ncShare(t, { type: 6, with: id, perm: 1 }); toast('Geteilt · in Sciebo unter „Geteilt“ einmal annehmen'); if (typeof closeSheets === 'function') closeSheets() } catch (err) { toast('Sciebo: ' + err.message) }
+        return;
+      }
+      if (k === 'link') { try { const d = await ncShare(t, { type: 3, perm: 1 }); if (!d.url) throw new Error('kein Link erhalten'); await copy(d.url, 'Link kopiert (nur lesen)') } catch (err) { toast('Link: ' + err.message) } return }
+      if (k === 'dav') copy(t.kind === 'share' ? t.url : ep(t), 'Adresse kopiert');
+    };
+    s.classList.add('on');
+  }
+
   function openForm(kind) { if (kind === 'dir') { addDir({ auto: true }); return } form = {}; renderSettings() }
 
   return {
     all: list, get, idb, boot, perm, refresh, flush, saveClip, putExtra, addDir, fetchClip, isSaved,
-    renderSettings, bind, openForm, kindLabel: t => KIND[t.kind], icon, parseShare, check, scan,
+    renderSettings, bind, openForm, kindLabel: t => KIND[t.kind], icon, parseShare, check, scan, ncInfo, readJoin, discover, shareSheet,
     hasAuto: () => list().some(t => t.auto)
   };
 })();
