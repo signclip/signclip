@@ -44,6 +44,9 @@
   #log { list-style:none; padding:0; margin:0; font-size:13px; }
   #log li { padding:4px 0; border-bottom:1px solid var(--line); word-break:break-word; }
   .ok { color:var(--ok); } .err { color:var(--err); }
+  a.btnlink { display:inline-block; border-radius:20px; padding:10px 16px; margin:8px 6px 0 0; font-size:14px; font-weight:600;
+              background:var(--sc); color:#1d1b20; text-decoration:none; }
+  a.btnlink[aria-disabled="true"] { opacity:.45; pointer-events:none; }
   .box { font-family:ui-monospace,monospace; font-size:12px; background:var(--bg); border:1px solid var(--line);
          border-radius:8px; padding:6px; display:block; word-break:break-all; margin-top:6px; }
 </style>
@@ -101,10 +104,12 @@
     <input type="text" id="sFed" placeholder="name@uni-koeln.de@uni-koeln.sciebo.de" autocapitalize="off" spellcheck="false">
     <label>Welcher Ordner?</label>
     <select id="sFolder"><option>SignTest</option></select>
-    <button id="bShare">Teilen und Sciebo öffnen</button>
+    <button id="bShare">Teilen</button>
+    <a id="aSciebo" class="btnlink" href="#" target="_blank" rel="noopener">Sciebo öffnen zum Annehmen</a>
+    <p class="mut" id="shareMsg"></p>
     <ol class="mut">
-      <li>Die App gibt den Ordner an deine Sciebo-ID frei (nur lesen).</li>
-      <li>Sciebo öffnet sich in einem neuen Tab → dort anmelden.</li>
+      <li><b>Teilen</b>: Die App gibt den Ordner an deine Sciebo-ID frei (nur lesen).</li>
+      <li><b>Sciebo öffnen zum Annehmen</b>: Sciebo öffnet sich in einem neuen Tab → dort anmelden.</li>
       <li>Oben auf die <b>Glocke</b> → Freigabe <b>annehmen</b>. Fertig – alles in diesem Ordner erscheint ab jetzt in Sciebo.</li>
     </ol>
 
@@ -338,22 +343,29 @@ $("#bList").onclick = () => renderTargets().catch(e => log(e.message, "err"));
 // ───────────────────────── 4a. Nextcloud-Ordner in Sciebo sichtbar machen ─────────────────────────
 $("#sFed").onchange = () => store.set("scieboId", $("#sFed").value.trim());
 $("#sFolder").onchange = () => store.set("shareFolder", $("#sFolder").value);
+// Link „Sciebo öffnen“ ist ein echter Link: Der Browser öffnet ihn beim Tippen zuverlässig (kein Pop-up-Blocker).
+function updateScieboLink() {
+  const t = parseCloudId($("#sFed").value.trim()), a = $("#aSciebo");
+  if (t) { a.href = `https://${t.server}/index.php/apps/files/`; a.setAttribute("aria-disabled", "false"); }
+  else { a.href = "#"; a.setAttribute("aria-disabled", "true"); }
+}
+$("#sFed").oninput = updateScieboLink;
 $("#bShare").onclick = async () => {
-  if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
-  const fed = $("#sFed").value.trim(), target = parseCloudId(fed);
-  if (!target) return log("Sciebo-ID im Format name@uni-koeln.de@uni-koeln.sciebo.de eintragen.", "err");
+  const msg = $("#shareMsg"); msg.className = "mut"; msg.textContent = "";
+  if (!acc) { msg.className = "err"; msg.textContent = "Erst anmelden (Abschnitt 1)."; return; }
+  const fed = $("#sFed").value.trim(), folder = $("#sFolder").value;
+  if (!parseCloudId(fed)) { msg.className = "err"; msg.textContent = "Sciebo-ID im Format name@uni-koeln.de@uni-koeln.sciebo.de eintragen."; return; }
   store.set("scieboId", fed);
-  // Tab sofort öffnen (im Klick), sonst blockiert der Browser das Fenster; Adresse folgt nach dem Teilen.
-  const tab = window.open("about:blank", "_blank");
+  $("#bShare").disabled = true; msg.textContent = "Wird geteilt …";
   try {
-    const r = await shareFolderToCloudId({ server: acc.server, user: acc.user, appPassword: acc.pw, folder: $("#sFolder").value, cloudId: fed });
-    log(`„${$("#sFolder").value}“ an ${fed} freigegeben${r.id != null ? " (ID " + r.id + ")" : ""}. In Sciebo: anmelden → Glocke → annehmen.`, "ok");
-    const url = `https://${target.server}/index.php/apps/files/`;
-    if (tab) tab.location.href = url; else window.open(url, "_blank");
+    const r = await shareFolderToCloudId({ server: acc.server, user: acc.user, appPassword: acc.pw, folder, cloudId: fed });
+    msg.className = "ok";
+    msg.textContent = `„${folder}“ ist an ${fed} freigegeben. Jetzt „Sciebo öffnen zum Annehmen“ → anmelden → Glocke → annehmen.`;
+    log(`„${folder}“ an ${fed} freigegeben${r.id != null ? " (ID " + r.id + ")" : ""}.`, "ok");
   } catch (e) {
-    if (tab) tab.close();
+    msg.className = "err"; msg.textContent = "Teilen: " + e.message;
     log("Teilen: " + e.message, "err");
-  }
+  } finally { $("#bShare").disabled = false; }
 };
 
 // ───────────────────────── 4b. Sciebo-Ordner in die Nextcloud holen ─────────────────────────
@@ -377,6 +389,7 @@ acc = loadAcc();
 if (acc && !acc.server) acc = null; // altes Format
 if (acc) { $("#cid").value = ncId(acc); $("#remember").checked = !!store.get("nc", ""); }
 $("#sFed").value = store.get("scieboId", "");
+updateScieboLink();
 showWho();
 if (acc) renderTargets().catch(e => log(e.message, "err"));
 if (!window.isSecureContext) log("Achtung: Seite läuft nicht über https – Kamera ist gesperrt.", "err");
