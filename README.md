@@ -6,7 +6,7 @@ Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärde
 
 ## Nextcloud-Test (vorübergehend)
 
-`index.html` im Hauptordner ist zurzeit eine kleine Test-App: Verbindung zur eigenen Nextcloud, quadratische Aufnahme speichern, Sciebo-Freigabe einbinden, Konten anlegen und per Einladungslink anmelden. Anleitung: [docs/NEXTCLOUD-TEST.md](docs/NEXTCLOUD-TEST.md). Im Code stehen keine Zugangsdaten. Nach dem Test wird die Datei durch die echte App ersetzt.
+`index.html` im Hauptordner ist zurzeit eine kleine Test-App: Verbindung zur eigenen Nextcloud, quadratische Aufnahme speichern, in mehrere Ordner speichern (auch eingebundene Sciebo-Ordner). Konten und Sciebo werden vorerst in der Nextcloud-Weboberfläche eingerichtet. Anleitung: [docs/NEXTCLOUD-TEST.md](docs/NEXTCLOUD-TEST.md). Im Code stehen keine Zugangsdaten. Nach dem Test wird die Datei durch die echte App ersetzt.
 
 ## Dokumente
 
