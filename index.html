@@ -143,6 +143,8 @@
       vorausfüllen, darum wird deine Nextcloud-ID beim Öffnen kopiert und du fügst sie bei „Zu deiner Nextcloud hinzufügen“ ein.</p>
     <button id="bOpenLink">Über Sciebo-Seite (ID wird kopiert)</button>
     <button id="bOpenNc">Nextcloud öffnen zum Annehmen</button>
+    <button id="bCheckIn">Prüfen: schon in meiner Nextcloud?</button>
+    <div id="inList"></div>
     <p class="mut">Deine Nextcloud-ID:</p>
     <span class="box" id="fedId">– erst anmelden –</span>
   </details>
@@ -545,6 +547,33 @@ $("#bOpenLink").onclick = async () => {
   log(copied
     ? `Sciebo geöffnet. Deine Nextcloud-ID ${ncId(acc)} ist kopiert – bei „Zu deiner Nextcloud hinzufügen“ einfügen.`
     : `Sciebo geöffnet. Bei „Zu deiner Nextcloud hinzufügen“ eintragen: ${ncId(acc)}`, "ok");
+};
+// Prüfen, welche Freigaben anderer schon in der eigenen Nextcloud angekommen (angenommen/eingebunden) sind.
+// Noch nicht angenommene stehen nicht im Ordnerbaum – die liegen unter „Ausstehende Freigaben“.
+$("#bCheckIn").onclick = async () => {
+  if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
+  const box = $("#inList"); box.innerHTML = '<p class="mut">Wird geprüft …</p>';
+  try { await renderTargets(); } catch (e) { box.innerHTML = ""; return log("Prüfen: " + e.message, "err"); }
+  const want = ($("#sName").value || "").trim().toLowerCase();
+  const found = tree.filter(t => badgesFor(t).some(b => b.cls === "in" || b.cls === "mnt"));
+  box.innerHTML = "";
+  const head = document.createElement("p"); head.className = "mut";
+  if (!found.length) {
+    head.textContent = "Noch keine Freigabe von anderen in deiner Nextcloud. Ist sie schon geschickt? Dann unter „Nextcloud öffnen zum Annehmen“ annehmen und erneut prüfen.";
+    box.append(head); return;
+  }
+  const hit = want && found.find(t => t.path.split("/").pop().toLowerCase() === want);
+  head.textContent = hit
+    ? `„${hit.path}“ ist in deiner Nextcloud angekommen ✓ – unter 3 anhaken, Schreibtest zeigt, ob du hineinspeichern darfst.`
+    : `Angekommen sind ${found.length} Ordner von anderen. „${$("#sName").value.trim()}“ ist nicht darunter – evtl. heißt er anders oder ist noch nicht angenommen.`;
+  head.className = hit ? "ok" : "mut";
+  box.append(head);
+  for (const t of found) {
+    const row = document.createElement("div"); row.className = "row";
+    row.textContent = t.path;
+    for (const b of badgesFor(t).filter(b => b.cls !== "out")) { const sp = document.createElement("span"); sp.className = "badge " + b.cls; sp.textContent = b.text; row.append(sp); }
+    box.append(row);
+  }
 };
 $("#bOpenNc").onclick = () => {
   if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
