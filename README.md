@@ -10,6 +10,7 @@ Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärde
 | --- | --- |
 | [docs/OVERVIEW.md](docs/OVERVIEW.md) | Worum es geht, Ziele nach Zeithorizont, Nutzergruppen, Umfang |
 | [docs/DESIGN.md](docs/DESIGN.md) | Gestaltungsprinzipien, Gesten, Overview-Bildschirm, offene Designfragen |
+| [docs/ETAPPEN.md](docs/ETAPPEN.md) | Vier Etappen von der ersten Person bis zur übergreifenden Anwendung, Regeln, offene Entscheidungen |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Datenmodelle, Module, Abhängigkeiten, Bauplan in kleinen Schritten |
 | [docs/RESEARCH.md](docs/RESEARCH.md) | Forschungsfragen, Annahmen, was noch zu prüfen ist |
 
