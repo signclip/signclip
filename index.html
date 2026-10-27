@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sign Nextcloud-Test</title>
 <!--
-  Sign – Nextcloud-Test
-  Eine einzige Datei, keine fremden Bibliotheken, keine Zugangsdaten im Code.
-  Zugangsdaten werden nur zur Laufzeit im Browser eingegeben (Abschnitt "Verbindung").
-  Prüft: Verbindung/CORS, quadratische Aufnahme speichern, in mehrere Ordner speichern
-  (auch in eingebundene Sciebo-Ordner). Konten und Sciebo werden in der Nextcloud-Weboberfläche eingerichtet.
+  Sign – Nextcloud-Test (vorübergehend)
+  Eine Seite, keine fremden Bibliotheken, keine Zugangsdaten im Code.
+  Ablauf: mit benutzer@server und Passwort anmelden → quadratisch aufnehmen → in Nextcloud-Ordner speichern
+          → Ordner mit Sciebo teilen (Sciebo öffnet sich zum Annehmen) bzw. Sciebo-Ordner in die Nextcloud holen.
+  Das föderierte Teilen kommt aus dem geprüften Baustein bausteine/freigabe-an-sciebo/.
 -->
 <style>
   :root { --bg:#faf9f7; --fg:#222; --mut:#7a7873; --card:#fff; --line:#e6e3dd;
@@ -23,14 +23,16 @@
   h1 { font-size:20px; font-weight:600; margin:4px 0 12px; }
   details { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px 14px; margin-bottom:12px; }
   summary { font-weight:600; cursor:pointer; }
+  h3 { font-size:15px; margin:14px 0 2px; }
   label { display:block; font-size:13px; color:var(--mut); margin-top:8px; }
-  input[type=text], input[type=password], input[type=url], input[type=email], input[type=number] {
+  input[type=text], input[type=password], input[type=url], select {
     width:100%; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--fg); font-size:15px; }
   button { border:0; border-radius:20px; padding:10px 16px; margin:8px 6px 0 0; font-size:14px; font-weight:600;
            background:var(--sc); color:#1d1b20; cursor:pointer; }
   button.rec { background:var(--rc); }
   button:disabled { opacity:.45; cursor:default; }
   .mut { color:var(--mut); font-size:13px; }
+  ol.mut { padding-left:18px; margin:6px 0; }
   .row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line); }
   .row:last-child { border-bottom:0; }
   .stage { position:relative; width:100%; aspect-ratio:1; background:#000; border-radius:20px; overflow:hidden; margin-top:8px; }
@@ -42,7 +44,7 @@
   #log { list-style:none; padding:0; margin:0; font-size:13px; }
   #log li { padding:4px 0; border-bottom:1px solid var(--line); word-break:break-word; }
   .ok { color:var(--ok); } .err { color:var(--err); }
-  code, .box { font-family:ui-monospace,monospace; font-size:12px; background:var(--bg); border:1px solid var(--line);
+  .box { font-family:ui-monospace,monospace; font-size:12px; background:var(--bg); border:1px solid var(--line);
          border-radius:8px; padding:6px; display:block; word-break:break-all; margin-top:6px; }
 </style>
 </head>
@@ -51,17 +53,18 @@
   <h1>Sign · Nextcloud-Test</h1>
   <p class="mut" id="who">Nicht verbunden.</p>
 
-  <!-- 1. VERBINDUNG ---------------------------------------------------------------->
+  <!-- 1. ANMELDEN ------------------------------------------------------------------->
   <details id="secConn" open>
-    <summary>1 · Verbindung</summary>
-    <p class="mut">Zugangsdaten werden nur hier eingegeben und nur in diesem Browser gehalten – nie im Code, nie auf GitHub.
-      Nutze ein <b>App-Passwort</b> (Nextcloud → Einstellungen → Sicherheit → Geräte &amp; Sitzungen), nicht dein Hauptpasswort.</p>
-    <label>Nextcloud-Adresse</label><input type="url" id="srv" placeholder="https://nx12345.your-storageshare.de" autocomplete="off">
-    <label>Benutzername</label><input type="text" id="usr" autocomplete="username">
-    <label>App-Passwort</label><input type="password" id="pw" autocomplete="current-password">
-    <label><input type="checkbox" id="remember"> Auf diesem Gerät merken (sonst nur bis zum Schließen des Tabs)</label>
-    <button id="bConnect">Verbinden + testen</button>
-    <button id="bForget">Auf diesem Gerät vergessen</button>
+    <summary>1 · Mit Nextcloud anmelden</summary>
+    <label>Nextcloud-Konto (benutzer@server)</label>
+    <input type="text" id="cid" placeholder="name@nx12345.your-storageshare.de" autocomplete="username" autocapitalize="off" spellcheck="false">
+    <label>Passwort</label>
+    <input type="password" id="pw" autocomplete="current-password">
+    <p class="mut">Dein normales Nextcloud-Passwort. Ist bei dir die Zwei-Faktor-Anmeldung an, geht nur ein App-Passwort
+      (Nextcloud → Einstellungen → Sicherheit). Zugangsdaten bleiben nur in diesem Browser – nie im Code, nie auf GitHub.</p>
+    <label><input type="checkbox" id="remember"> Auf diesem Gerät angemeldet bleiben</label>
+    <button id="bConnect">Anmelden</button>
+    <button id="bForget">Abmelden</button>
   </details>
 
   <!-- 2. AUFNAHME ------------------------------------------------------------------>
@@ -84,54 +87,48 @@
   <!-- 3. SPEICHERORTE --------------------------------------------------------------->
   <details id="secTargets">
     <summary>3 · Speicherorte („immer speichern“)</summary>
-    <p class="mut">Ordner in deiner Nextcloud. Eingebundene Sciebo-Ordner erscheinen hier ebenfalls, sobald sie angenommen sind.
-      Jede Aufnahme geht in alle angehakten Ordner.</p>
+    <p class="mut">Ordner in deiner Nextcloud – auch Sciebo-Ordner, die du in die Nextcloud geholt hast (4b). Jede Aufnahme geht in alle angehakten Ordner.</p>
     <button id="bList">Ordner laden</button>
-    <button id="bMkTest">Ordner „SignTest“ anlegen</button>
     <div id="targets"></div>
-    <p class="mut" style="margin-top:10px"><b>Direkte Ziele außerhalb deiner Nextcloud</b> (aus Abschnitt 4):</p>
-    <div id="davTargets"><span class="mut">keine</span></div>
   </details>
 
   <!-- 4. SCIEBO -------------------------------------------------------------------->
   <details id="secSciebo">
-    <summary>4 · Sciebo direkt (Versuch im Browser)</summary>
-    <p class="mut">Drei Wege zum Ausprobieren. A und B sprechen Sciebo direkt an – das blockiert der Browser wahrscheinlich (CORS), mit der Handy-App geht es sicher.
-      C läuft über deine Nextcloud. Was hier rot wird, geht über die Nextcloud-Weboberfläche (Anleitung: docs/NEXTCLOUD-TEST.md, F und G).</p>
+    <summary>4 · Mit Sciebo verbinden</summary>
 
-    <p><b>A · Sciebo-Konto oder dir freigegebener Ordner (Sciebo-App-Passwort)</b></p>
-    <label>Sciebo-Adresse</label><input type="url" id="aSrv" value="https://uni-koeln.sciebo.de">
-    <label>Sciebo-Benutzername (Teil vor dem letzten @ deiner Sciebo-ID, z. B. name@uni-koeln.de)</label><input type="text" id="aUsr" autocomplete="off">
-    <label>Sciebo-App-Passwort (Sciebo → Einstellungen → Sicherheit)</label><input type="password" id="aPw" autocomplete="off">
-    <label>Ordner in Sciebo (leer = alles; Pfad steht in Sciebo in der Adresszeile nach „dir=“)</label><input type="text" id="aPath" placeholder="/Sign-Gruppe">
-    <button id="bAddAcc">Testen + als Speicherort hinzufügen</button>
+    <h3>4a · Nextcloud-Ordner in Sciebo sichtbar machen</h3>
+    <label>Deine Sciebo-ID (Sciebo → Einstellungen → Teilen)</label>
+    <input type="text" id="sFed" placeholder="name@uni-koeln.de@uni-koeln.sciebo.de" autocapitalize="off" spellcheck="false">
+    <label>Welcher Ordner?</label>
+    <select id="sFolder"><option>SignTest</option></select>
+    <button id="bShare">Teilen und Sciebo öffnen</button>
+    <ol class="mut">
+      <li>Die App gibt den Ordner an deine Sciebo-ID frei (nur lesen).</li>
+      <li>Sciebo öffnet sich in einem neuen Tab → dort anmelden.</li>
+      <li>Oben auf die <b>Glocke</b> → Freigabe <b>annehmen</b>. Fertig – alles in diesem Ordner erscheint ab jetzt in Sciebo.</li>
+    </ol>
 
-    <p><b>B · Sciebo-Freigabelink (Link muss Hochladen erlauben)</b></p>
-    <label>Freigabelink</label><input type="url" id="sLink" placeholder="https://uni-koeln.sciebo.de/s/…">
-    <span class="box" id="sToken">Kennung: –</span>
-    <label>Link-Passwort (falls gesetzt)</label><input type="password" id="sLinkPw" autocomplete="off">
-    <button id="bAddLink">Testen + als Speicherort hinzufügen</button>
-    <button id="bCopyToken">Kennung kopieren</button>
-
-    <label><input type="checkbox" id="dRemember"> Sciebo-Zugänge auf diesem Gerät merken (sonst nur bis zum Schließen des Tabs)</label>
-
-    <p><b>C · Nextcloud-Ordner in Sciebo sichtbar machen (nur ansehen)</b></p>
-    <p class="mut">Braucht in WebAppPassword auch beim Feld für <b>Files sharing</b> den Ursprung <code style="display:inline">https://signclip.github.io</code>. Danach in Sciebo über die Glocke annehmen.</p>
-    <label>Deine Sciebo-ID (Sciebo → Einstellungen → Teilen)</label><input type="text" id="sFed" placeholder="name@uni-koeln.de@uni-koeln.sciebo.de">
-    <label>Ordner in deiner Nextcloud</label><input type="text" id="sFolder" value="SignTest">
-    <button id="bShareToSciebo">In Sciebo sichtbar machen</button>
-    <p class="mut">Deine Nextcloud-ID (für den umgekehrten Weg):</p>
-    <span class="box" id="fedId">– erst verbinden –</span>
-    <button id="bCopyFed">Nextcloud-ID kopieren</button>
+    <h3>4b · Sciebo-Ordner in die Nextcloud holen (zum Hineinspeichern)</h3>
+    <label>Sciebo-Freigabelink</label>
+    <input type="url" id="sLink" placeholder="https://uni-koeln.sciebo.de/s/…">
+    <button id="bOpenLink">Link öffnen</button>
+    <button id="bOpenNc">Nextcloud öffnen zum Annehmen</button>
+    <ol class="mut">
+      <li><b>Link öffnen</b>: Sciebo öffnet sich, deine Nextcloud-ID ist schon kopiert.</li>
+      <li>Auf der Sciebo-Seite <b>„Zu deiner Nextcloud hinzufügen“</b> wählen → ID einfügen → bestätigen.</li>
+      <li><b>Nextcloud öffnen zum Annehmen</b> → oben auf die <b>Glocke</b> → <b>annehmen</b>.</li>
+      <li>Zurück hier: <b>3 · Ordner laden</b> → den Sciebo-Ordner anhaken.</li>
+    </ol>
+    <p class="mut">Deine Nextcloud-ID:</p>
+    <span class="box" id="fedId">– erst anmelden –</span>
   </details>
 
   <!-- 5. KONTEN --------------------------------------------------------------------->
   <details id="secAdmin">
-    <summary>5 · Konten (vorerst von Hand)</summary>
+    <summary>5 · Weitere Personen</summary>
     <p class="mut">Konten legst du vorerst in der Nextcloud-Weboberfläche an: Profilbild → Konten → Neues Konto → E-Mail eintragen,
-      Passwort leer lassen, Gruppe <b>Sign-Students</b>. Die Person bekommt eine E-Mail und setzt ihr Passwort selbst.
-      Danach erzeugt sie unter Einstellungen → Sicherheit ein App-Passwort und meldet sich hier unter 1 an.
-      Konten direkt aus der App anlegen kommt mit der Handy-App (Capacitor), dort gibt es die Browser-Sperre nicht.</p>
+      Passwort leer lassen, Gruppe <b>Sign-Students</b>. Die Person setzt ihr Passwort per E-Mail selbst und meldet sich hier
+      unter 1 mit <code>benutzer@server</code> an.</p>
   </details>
 
   <!-- PROTOKOLL -------------------------------------------------------------------->
@@ -141,8 +138,9 @@
   </details>
 </main>
 
-<script>
-"use strict";
+<script type="module">
+import { shareFolderToCloudId, parseCloudId } from "./bausteine/freigabe-an-sciebo/freigabe.js";
+
 // ───────────────────────── Hilfsfunktionen ─────────────────────────
 const $ = s => document.querySelector(s);
 function log(msg, cls = "") {
@@ -151,56 +149,60 @@ function log(msg, cls = "") {
   li.textContent = new Date().toLocaleTimeString() + "  " + msg;
   $("#log").prepend(li);
 }
-// UTF-8-sicheres Base64 (für Basic-Auth und Einladungslink)
-const b64 = s => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+const b64 = s => btoa(String.fromCharCode(...new TextEncoder().encode(s))); // UTF-8-sicher
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
 
 // ───────────────────────── Zugang (nur im Browser) ─────────────────────────
-// acc = { server, user, pw }   pw ist immer ein App-Passwort
+// acc = { server: "https://…", user, pw }
 let acc = null;
-function loadAcc() {
-  try { return JSON.parse(sessionStorage.getItem("nc") || localStorage.getItem("nc") || "null"); } catch { return null; }
+
+// „name@nx12345.your-storageshare.de“ → Benutzer = alles vor dem letzten @, Server = dahinter.
+// Server darf einen Pfad haben (Nextcloud in einem Unterordner) und http(s):// vorne.
+function parseLogin(cloudId) {
+  const id = String(cloudId || "").trim();
+  const at = id.lastIndexOf("@");
+  if (at <= 0 || at === id.length - 1) return null;
+  const user = id.slice(0, at);
+  let server = id.slice(at + 1).replace(/\/+$/, "");
+  if (!/^https?:\/\//.test(server)) server = "https://" + server;
+  return { user, server };
 }
+function loadAcc() { try { return JSON.parse(sessionStorage.getItem("nc") || localStorage.getItem("nc") || "null"); } catch { return null; } }
 function saveAcc(a, remember) {
   const s = JSON.stringify(a);
   try { sessionStorage.setItem("nc", s); } catch {}
   try { remember ? localStorage.setItem("nc", s) : localStorage.removeItem("nc"); } catch {}
 }
-function forgetAcc() {
-  try { sessionStorage.removeItem("nc"); localStorage.removeItem("nc"); } catch {}
-  acc = null; showWho();
-}
-const base = a => a.server.trim().replace(/\/+$/, "");
-const host = a => base(a).replace(/^https?:\/\//, "");
+const host = a => a.server.replace(/^https?:\/\//, "");
+const ncId = a => `${a.user}@${host(a)}`;
 const encPath = p => p.split("/").map(encodeURIComponent).join("/");
-const davRoot = a => `${base(a)}/remote.php/dav/files/${encodeURIComponent(a.user)}`;
-
+const davRoot = a => `${a.server}/remote.php/dav/files/${encodeURIComponent(a.user)}`;
 function showWho() {
-  $("#who").textContent = acc ? `Verbunden als ${acc.user} @ ${host(acc)}` : "Nicht verbunden.";
-  $("#fedId").textContent = acc ? `${acc.user}@${host(acc)}` : "– erst verbinden –";
+  $("#who").textContent = acc ? `Angemeldet als ${ncId(acc)}` : "Nicht angemeldet.";
+  $("#fedId").textContent = acc ? ncId(acc) : "– erst anmelden –";
 }
 
-// ───────────────────────── HTTP: WebDAV und OCS ─────────────────────────
-async function req(method, url, { a = acc, headers = {}, body } = {}) {
-  if (!a) throw new Error("Nicht verbunden.");
+// ───────────────────────── WebDAV (Dateien) ─────────────────────────
+async function req(method, url, { headers = {}, body } = {}) {
+  if (!acc) throw new Error("Nicht angemeldet.");
   let r;
-  try {
-    r = await fetch(url, { method, headers: { Authorization: "Basic " + b64(a.user + ":" + a.pw), ...headers }, body });
-  } catch (e) {
-    // fetch wirft ohne Statuscode, wenn der Browser die Antwort blockiert (CORS) oder der Server nicht erreichbar ist
-    throw new Error("Keine Antwort – meist CORS (WebAppPassword-Freigabe für diese Adresse prüfen) oder Adresse falsch.");
-  }
+  try { r = await fetch(url, { method, headers: { Authorization: "Basic " + b64(acc.user + ":" + acc.pw), ...headers }, body }); }
+  catch { throw new Error("Keine Antwort – Adresse prüfen, oder in der Nextcloud bei WebAppPassword https://signclip.github.io eintragen."); }
+  if (r.status === 401) throw new Error("Anmeldung abgelehnt – Benutzername/Passwort prüfen. Mit Zwei-Faktor-Anmeldung nur ein App-Passwort.");
   if (!r.ok) throw new Error(`${method} → ${r.status} ${r.statusText}`);
   return r;
 }
 async function propfind(path = "") {
-  const xml = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getetag/></d:prop></d:propfind>';
+  const xml = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>';
   const r = await req("PROPFIND", davRoot(acc) + "/" + encPath(path), { headers: { Depth: "1", "Content-Type": "application/xml" }, body: xml });
   const doc = new DOMParser().parseFromString(await r.text(), "application/xml");
-  const items = [...doc.getElementsByTagNameNS("DAV:", "response")].map(n => {
+  return [...doc.getElementsByTagNameNS("DAV:", "response")].map(n => {
     const href = decodeURIComponent(n.getElementsByTagNameNS("DAV:", "href")[0].textContent).replace(/\/$/, "");
     return { name: href.split("/").pop(), dir: n.getElementsByTagNameNS("DAV:", "collection").length > 0 };
-  });
-  return items.slice(1); // erster Eintrag ist der Ordner selbst
+  }).slice(1); // erster Eintrag ist der Ordner selbst
 }
 async function mkcol(path) {
   try { await req("MKCOL", davRoot(acc) + "/" + encPath(path)); }
@@ -210,67 +212,26 @@ async function put(path, blob, type) {
   await req("PUT", davRoot(acc) + "/" + encPath(path), { headers: { "Content-Type": type || "application/octet-stream" }, body: blob });
 }
 
-// ───────────────────────── Direkte Ziele (WebDAV außerhalb der eigenen Nextcloud) ─────────────────────────
-// t = { id, label, url, user, pw, public, on }   url zeigt direkt auf den Zielordner
-function getDav() { try { return JSON.parse(sessionStorage.getItem("dav") || localStorage.getItem("dav") || "[]"); } catch { return []; } }
-function setDav(list) {
-  const s = JSON.stringify(list);
-  try { sessionStorage.setItem("dav", s); } catch {}
-  try { $("#dRemember").checked ? localStorage.setItem("dav", s) : localStorage.removeItem("dav"); } catch {}
-}
-async function davReq(t, method, path = "", { headers = {}, body } = {}) {
-  const url = t.url.replace(/\/+$/, "") + (path ? "/" + encPath(path) : "/");
-  const h = { ...headers };
-  if (t.user || t.pw) h.Authorization = "Basic " + b64((t.user || "") + ":" + (t.pw || ""));
-  if (t.public) h["X-Requested-With"] = "XMLHttpRequest"; // von Nextcloud für öffentliche Links verlangt
-  let r;
-  try { r = await fetch(url, { method, headers: h, body }); }
-  catch { throw new Error("Keine Antwort – Sciebo erlaubt dem Browser wahrscheinlich keinen direkten Zugriff (CORS). Mit der Handy-App geht es; im Browser über Externer Speicher (Anleitung F)."); }
-  if (!r.ok) throw new Error(`${method} → ${r.status} ${r.statusText}`);
-  return r;
-}
-async function davTest(t) {
-  const xml = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>';
-  await davReq(t, "PROPFIND", "", { headers: { Depth: "0", "Content-Type": "application/xml" }, body: xml });
-}
-function renderDav() {
-  const list = getDav(), box = $("#davTargets");
-  box.innerHTML = "";
-  if (!list.length) { box.innerHTML = '<span class="mut">keine</span>'; return; }
-  for (const t of list) {
-    const row = document.createElement("label"); row.className = "row";
-    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = t.on !== false;
-    cb.onchange = () => { setDav(getDav().map(x => x.id === t.id ? { ...x, on: cb.checked } : x)); };
-    const del = document.createElement("button"); del.textContent = "entfernen"; del.style.marginLeft = "auto";
-    del.onclick = e => { e.preventDefault(); setDav(getDav().filter(x => x.id !== t.id)); renderDav(); log(`„${t.label}“ entfernt.`); };
-    row.append(cb, document.createTextNode(" " + t.label), del);
-    box.append(row);
-  }
-}
-async function addDav(t) {
-  try {
-    await davTest(t);
-    setDav([...getDav().filter(x => x.url !== t.url), t]);
-    renderDav();
-    log(`Direkt verbunden: „${t.label}“ – unter 3 angehakt, Aufnahmen gehen jetzt auch dorthin.`, "ok");
-    return true;
-  } catch (e) { log(`„${t.label}“: ${e.message}`, "err"); return false; }
-}
-
-// ───────────────────────── 1. Verbindung ─────────────────────────
+// ───────────────────────── 1. Anmelden ─────────────────────────
 $("#bConnect").onclick = async () => {
-  const a = { server: $("#srv").value, user: $("#usr").value.trim(), pw: $("#pw").value };
-  if (!a.server || !a.user || !a.pw) return log("Bitte Adresse, Benutzername und App-Passwort ausfüllen.", "err");
-  acc = a;
+  const p = parseLogin($("#cid").value), pw = $("#pw").value;
+  if (!p || !pw) return log("Bitte Konto im Format benutzer@server und Passwort eintragen.", "err");
+  acc = { ...p, pw };
   try {
+    await mkcol("SignTest");
     const items = await propfind("");
-    saveAcc(a, $("#remember").checked);
+    saveAcc(acc, $("#remember").checked);
     $("#pw").value = "";
     showWho();
-    log(`T1 bestanden: Verbindung ok, ${items.length} Einträge im Hauptordner.`, "ok");
-      } catch (e) { acc = null; showWho(); log("T1/T3 nicht bestanden: " + e.message, "err"); }
+    log(`Angemeldet. ${items.filter(i => i.dir).length} Ordner gefunden, „SignTest“ ist bereit.`, "ok");
+    await renderTargets();
+    $("#secRec").open = true;
+  } catch (e) { acc = null; showWho(); log("Anmelden: " + e.message, "err"); }
 };
-$("#bForget").onclick = () => { forgetAcc(); log("Zugang auf diesem Gerät vergessen. (Das App-Passwort selbst gilt weiter – widerrufen in Nextcloud → Sicherheit.)"); };
+$("#bForget").onclick = () => {
+  try { sessionStorage.removeItem("nc"); localStorage.removeItem("nc"); } catch {}
+  acc = null; showWho(); log("Abgemeldet – Zugangsdaten aus diesem Browser gelöscht.");
+};
 
 // ───────────────────────── 2. Quadratische Aufnahme ─────────────────────────
 const SIZE = 480; // Kantenlänge in Pixeln
@@ -336,117 +297,89 @@ function resetRec() {
 $("#bDiscard").onclick = () => { resetRec(); log("Aufnahme verworfen."); };
 $("#bSave").onclick = async () => {
   const targets = getTargets();
-  if (!targets.length && !getDav().some(x => x.on !== false)) return log("Kein Speicherort angehakt (Abschnitt 3).", "err");
+  if (!targets.length) return log("Kein Speicherort angehakt (Abschnitt 3).", "err");
   const name = "rec-" + recMeta.start.replace(/[:.]/g, "-");
   const ext = recBlob.type.includes("mp4") ? "mp4" : "webm";
   const meta = new Blob([JSON.stringify(recMeta, null, 2)], { type: "application/json" });
   for (const t of targets) {
     try {
-      await mkcol(t); // Zielordner anlegen, falls er fehlt (sonst antwortet die Nextcloud auf PUT mit 404)
+      await mkcol(t); // Zielordner anlegen, falls er fehlt
       await put(`${t}/${name}_video.${ext}`, recBlob, recBlob.type);
       await put(`${t}/${name}_video.json`, meta, "application/json");
-      log(`T2/T8 bestanden: gespeichert in „${t}“.`, "ok");
+      log(`Gespeichert in „${t}“.`, "ok");
     } catch (e) { log(`Speichern in „${t}“ fehlgeschlagen: ${e.message}`, "err"); }
-  }
-  for (const t of getDav().filter(x => x.on !== false)) { // direkte Ziele (z. B. Sciebo)
-    try {
-      await davReq(t, "PUT", `${name}_video.${ext}`, { headers: { "Content-Type": recBlob.type }, body: recBlob });
-      await davReq(t, "PUT", `${name}_video.json`, { headers: { "Content-Type": "application/json" }, body: meta });
-      log(`Direkt gespeichert in „${t.label}“.`, "ok");
-    } catch (e) { log(`Direkt speichern in „${t.label}“ fehlgeschlagen: ${e.message}`, "err"); }
   }
   resetRec();
 };
 
 // ───────────────────────── 3. Speicherorte ─────────────────────────
-function getTargets() { try { return JSON.parse(localStorage.getItem("targets") || '["SignTest"]'); } catch { return ["SignTest"]; } }
-function setTargets(t) { try { localStorage.setItem("targets", JSON.stringify(t)); } catch {} }
+function getTargets() { try { return JSON.parse(store.get("targets", '["SignTest"]')); } catch { return ["SignTest"]; } }
+function setTargets(t) { store.set("targets", JSON.stringify(t)); }
 async function renderTargets() {
-  const items = (await propfind("")).filter(i => i.dir);
+  const dirs = (await propfind("")).filter(i => i.dir).map(i => i.name);
   const sel = getTargets();
   $("#targets").innerHTML = "";
-  for (const i of items) {
+  for (const name of dirs) {
     const row = document.createElement("label"); row.className = "row";
-    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = sel.includes(i.name);
-    cb.onchange = () => { const t = getTargets().filter(x => x !== i.name); if (cb.checked) t.push(i.name); setTargets(t); };
-    row.append(cb, document.createTextNode(" " + i.name));
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = sel.includes(name);
+    cb.onchange = () => { const t = getTargets().filter(x => x !== name); if (cb.checked) t.push(name); setTargets(t); };
+    row.append(cb, document.createTextNode(" " + name));
     $("#targets").append(row);
   }
-  log(`${items.length} Ordner geladen.`, "ok");
+  // dieselbe Liste als Auswahl für 4a
+  const keep = $("#sFolder").value || store.get("shareFolder", "SignTest");
+  $("#sFolder").innerHTML = "";
+  for (const name of dirs) { const o = document.createElement("option"); o.textContent = name; $("#sFolder").append(o); }
+  if (dirs.includes(keep)) $("#sFolder").value = keep;
+  log(`${dirs.length} Ordner geladen.`, "ok");
 }
 $("#bList").onclick = () => renderTargets().catch(e => log(e.message, "err"));
-$("#bMkTest").onclick = async () => {
-  try { await mkcol("SignTest"); log("Ordner „SignTest“ bereit.", "ok"); await renderTargets(); } catch (e) { log(e.message, "err"); }
-};
 
-// ───────────────────────── 4. Sciebo direkt ─────────────────────────
-function linkParts(l) { const m = (l || "").trim().match(/^https:\/\/([^/]+)\/(?:index\.php\/)?s\/([A-Za-z0-9]+)/); return m ? { host: m[1], token: m[2] } : null; }
-$("#sLink").oninput = () => { const p = linkParts($("#sLink").value); $("#sToken").textContent = "Kennung: " + (p ? p.token : "–"); };
-$("#bCopyToken").onclick = async () => {
-  const p = linkParts($("#sLink").value);
-  if (!p) return log("Link nicht erkannt. Erwartet: https://…sciebo.de/s/<Kennung>", "err");
-  try { await navigator.clipboard.writeText(p.token); log("Kennung kopiert – in der Nextcloud beim externen Speicher als Benutzername einfügen.", "ok"); } catch { log("Kopieren nicht erlaubt – bitte von Hand markieren.", "err"); }
-};
-
-// A: eigenes Sciebo-Konto bzw. dir freigegebener Ordner, mit Sciebo-App-Passwort
-$("#bAddAcc").onclick = async () => {
-  const srv = $("#aSrv").value.trim().replace(/\/+$/, ""), user = $("#aUsr").value.trim(), pw = $("#aPw").value;
-  const path = $("#aPath").value.trim().replace(/^\/+|\/+$/g, "");
-  if (!/^https:\/\//.test(srv) || !user || !pw) return log("Sciebo-Adresse, Benutzername und App-Passwort ausfüllen.", "err");
-  const url = `${srv}/remote.php/dav/files/${encodeURIComponent(user)}` + (path ? "/" + encPath(path) : "");
-  const ok = await addDav({ id: crypto.randomUUID(), label: `Sciebo ${user}${path ? " /" + path : ""}`, url, user, pw, on: true });
-  if (ok) $("#aPw").value = "";
-};
-
-// B: öffentlicher Freigabelink – zuerst neue Schnittstelle, dann ältere
-$("#bAddLink").onclick = async () => {
-  const p = linkParts($("#sLink").value), pw = $("#sLinkPw").value;
-  if (!p) return log("Link nicht erkannt. Erwartet: https://…sciebo.de/s/<Kennung>", "err");
-  const label = `Sciebo-Link ${p.token.slice(0, 6)}…`;
-  const neu = { id: crypto.randomUUID(), label, url: `https://${p.host}/public.php/dav/files/${p.token}`, user: pw ? "anonymous" : "", pw, public: true, on: true };
-  if (await addDav(neu)) { $("#sLinkPw").value = ""; return; }
-  const alt = { id: crypto.randomUUID(), label, url: `https://${p.host}/public.php/webdav`, user: p.token, pw, public: true, on: true };
-  log("Zweiter Versuch mit der älteren Link-Schnittstelle …");
-  if (await addDav(alt)) $("#sLinkPw").value = "";
-};
-$("#dRemember").onchange = () => setDav(getDav());
-
-// C: Nextcloud-Ordner an die Sciebo-ID freigeben (nur Lesen) – über die Freigabe-Schnittstelle von WebAppPassword,
-// die als einzige Freigabe-Schnittstelle CORS für den Browser erlaubt.
-$("#bShareToSciebo").onclick = async () => {
-  if (!acc) return log("Erst verbinden (Abschnitt 1).", "err");
-  const fed = $("#sFed").value.trim(), folder = $("#sFolder").value.trim().replace(/^\/+|\/+$/g, "");
-  if (!/^\S+@[^@\s]+\.[^@\s]+$/.test(fed)) return log("Sciebo-ID im Format name@uni-koeln.de@uni-koeln.sciebo.de eintragen.", "err");
-  if (!folder) return log("Ordner angeben.", "err");
+// ───────────────────────── 4a. Nextcloud-Ordner in Sciebo sichtbar machen ─────────────────────────
+$("#sFed").onchange = () => store.set("scieboId", $("#sFed").value.trim());
+$("#sFolder").onchange = () => store.set("shareFolder", $("#sFolder").value);
+$("#bShare").onclick = async () => {
+  if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
+  const fed = $("#sFed").value.trim(), target = parseCloudId(fed);
+  if (!target) return log("Sciebo-ID im Format name@uni-koeln.de@uni-koeln.sciebo.de eintragen.", "err");
+  store.set("scieboId", fed);
+  // Tab sofort öffnen (im Klick), sonst blockiert der Browser das Fenster; Adresse folgt nach dem Teilen.
+  const tab = window.open("about:blank", "_blank");
   try {
-    await mkcol(folder);
-    const r = await req("POST", `${base(acc)}/index.php/apps/webapppassword/api/v1/shares?format=json`, {
-      headers: { "OCS-APIRequest": "true", "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-      body: new URLSearchParams({ path: "/" + folder, shareType: "6", shareWith: fed, permissions: "1" })
-    });
-    const j = await r.json().catch(() => null);
-    const meta = j && j.ocs && j.ocs.meta;
-    if (meta && meta.status !== "ok") throw new Error(`${meta.statuscode}: ${meta.message || "Fehler"}`);
-    log(`„${folder}“ an ${fed} freigegeben (nur Lesen). Jetzt in Sciebo über die Glocke annehmen.`, "ok");
+    const r = await shareFolderToCloudId({ server: acc.server, user: acc.user, appPassword: acc.pw, folder: $("#sFolder").value, cloudId: fed });
+    log(`„${$("#sFolder").value}“ an ${fed} freigegeben${r.id != null ? " (ID " + r.id + ")" : ""}. In Sciebo: anmelden → Glocke → annehmen.`, "ok");
+    const url = `https://${target.server}/index.php/apps/files/`;
+    if (tab) tab.location.href = url; else window.open(url, "_blank");
   } catch (e) {
-    log("In Sciebo sichtbar machen: " + e.message + " – WebAppPassword-Feld „Files sharing“ prüfen; sonst in der Nextcloud beim Ordner „Teilen“ (Anleitung G).", "err");
+    if (tab) tab.close();
+    log("Teilen: " + e.message, "err");
   }
 };
-$("#bCopyFed").onclick = async () => {
-  if (!acc) return log("Erst verbinden.", "err");
-  try { await navigator.clipboard.writeText(`${acc.user}@${host(acc)}`); log("Nextcloud-ID kopiert.", "ok"); } catch { log("Kopieren nicht erlaubt – bitte von Hand markieren.", "err"); }
+
+// ───────────────────────── 4b. Sciebo-Ordner in die Nextcloud holen ─────────────────────────
+$("#bOpenLink").onclick = async () => {
+  const l = $("#sLink").value.trim();
+  if (!/^https:\/\/[^/]+\/(index\.php\/)?s\/[A-Za-z0-9]+/.test(l)) return log("Bitte einen Sciebo-Freigabelink einfügen (…/s/…).", "err");
+  if (!acc) return log("Erst anmelden (Abschnitt 1) – dann ist deine Nextcloud-ID bekannt.", "err");
+  window.open(l, "_blank", "noopener");
+  try { await navigator.clipboard.writeText(ncId(acc)); log(`Sciebo geöffnet. Deine Nextcloud-ID ${ncId(acc)} ist kopiert – bei „Zu deiner Nextcloud hinzufügen“ einfügen.`, "ok"); }
+  catch { log(`Sciebo geöffnet. Bei „Zu deiner Nextcloud hinzufügen“ eintragen: ${ncId(acc)}`, "ok"); }
+};
+$("#bOpenNc").onclick = () => {
+  if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
+  window.open(`${acc.server}/index.php/apps/files/`, "_blank", "noopener");
+  log("Nextcloud geöffnet: oben auf die Glocke → annehmen. Danach hier unter 3 „Ordner laden“.");
 };
 
 // ───────────────────────── Start ─────────────────────────
-(() => {
-  acc = loadAcc();
-  if (acc) { $("#srv").value = acc.server; $("#usr").value = acc.user; }
-  try { localStorage.removeItem("helper"); localStorage.removeItem("autoAcc"); localStorage.removeItem("autoHosts"); } catch {} // Reste früherer Testversionen entfernen
-  try { $("#dRemember").checked = !!localStorage.getItem("dav"); } catch {}
-  renderDav();
-  showWho();
-  if (!window.isSecureContext) log("Achtung: Seite läuft nicht über https – Kamera ist gesperrt.", "err");
-})();
+for (const k of ["helper", "autoAcc", "autoHosts", "dav"]) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch {} } // Reste früherer Testversionen
+acc = loadAcc();
+if (acc && !acc.server) acc = null; // altes Format
+if (acc) { $("#cid").value = ncId(acc); $("#remember").checked = !!store.get("nc", ""); }
+$("#sFed").value = store.get("scieboId", "");
+showWho();
+if (acc) renderTargets().catch(e => log(e.message, "err"));
+if (!window.isSecureContext) log("Achtung: Seite läuft nicht über https – Kamera ist gesperrt.", "err");
 </script>
 </body>
 </html>

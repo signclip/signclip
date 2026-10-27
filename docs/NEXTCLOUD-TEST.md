@@ -27,7 +27,7 @@ Erscheint noch eine alte Seite: privates Fenster öffnen oder zweimal neu laden.
 1. **WebAppPassword:** Profilbild → **Apps** → **WebAppPassword** aktivieren → **Verwaltungseinstellungen** → links ganz unten **WebAppPassword** (oder „Zusätzliche Einstellungen“) → `https://signclip.github.io` als erlaubten Ursprung eintragen (ohne Pfad, ohne Schrägstrich am Ende)
 2. **Gruppe:** `Sign-Students` (ist angelegt)
 3. **Externer Speicher:** App **External storage support** aktivieren (ist aktiviert)
-4. **App-Passwort für den Test:** mit deinem Alltagskonto → **Persönliche Einstellungen** → **Sicherheit** → „Geräte & Sitzungen“ → Name `Sign Test Browser` → **Neues App-Passwort erstellen** → in den Passwortmanager
+4. **Anmelden** in der App mit `benutzer@server` und deinem normalen Nextcloud-Passwort. Nur wenn bei dir die **Zwei-Faktor-Anmeldung** an ist, brauchst du stattdessen ein App-Passwort (Persönliche Einstellungen → Sicherheit).
 
 ---
 
@@ -35,7 +35,7 @@ Erscheint noch eine alte Seite: privates Fenster öffnen oder zweimal neu laden.
 
 | Schritt in der App | Was du tust | Ergebnis im Protokoll |
 | --- | --- | --- |
-| **1 · Verbindung** | Adresse, Benutzername, App-Passwort → **Verbinden + testen** | grün „T1 bestanden“ |
+| **1 · Anmelden** | `benutzer@server` (z. B. `name@nx12345.your-storageshare.de`) und dein Nextcloud-Passwort → **Anmelden** | grün „Angemeldet“ |
 | **2 · Aufnahme** | **Kamera an** → **Start** → **Stopp** → **Speichern** | grün „gespeichert in SignTest“ (Ordner wird automatisch angelegt) |
 | **3 · Speicherorte** | **Ordner laden** → weitere Ordner anhaken | jede Aufnahme geht in alle angehakten Ordner |
 | **3 · mit Sciebo** | nach F den Ordner „Sciebo Uni Köln“ anhaken → aufnehmen → speichern | grün für beide; Datei liegt in Sciebo |
@@ -100,42 +100,27 @@ Kommt eine **Warnung**, bitte den genauen Text melden. Häufige Ursachen:
 
 ---
 
-## J. Direkt-Versuche in der App (Abschnitt 4)
-
-Drei Wege, die in der App selbst ausprobiert werden. **A und B werden im Browser voraussichtlich rot** (Sciebo erlaubt Browser-Apps von fremden Adressen keinen Zugriff). Rot heißt dann: Weg geht erst mit der Handy-App – im Browser F bzw. G nutzen.
+## J. Mit Sciebo verbinden (Abschnitt 4 der App)
 
 ### Einmal vorher, von Hand
-| Wo | Was | Wofür |
-| --- | --- | --- |
-| **Nextcloud** → Verwaltungseinstellungen → **WebAppPassword** | beim Feld für **Files sharing** ebenfalls `https://signclip.github.io` eintragen | Weg C |
-| **Sciebo** → Einstellungen → **Sicherheit** | App-Passwort erstellen (Name z. B. `Sign Test`), kopieren | Weg A |
-| **Sciebo** → Einstellungen → **Teilen** | deine **Federated Cloud ID** kopieren | Weg C |
-| **Sciebo** → Ordner → Teilen → Link | Link mit **„Hochladen und Bearbeiten“** (und Passwort) | Weg B |
+| Wo | Was |
+| --- | --- |
+| **Nextcloud** → Verwaltungseinstellungen → **WebAppPassword** | `https://signclip.github.io` in **beide** Felder: WebDAV **und** Files sharing |
+| **Sciebo** → Einstellungen → **Teilen** | deine **Federated Cloud ID** kopieren, z. B. `name@uni-koeln.de@uni-koeln.sciebo.de` |
 
-### In der App eintragen
-| Weg | Feld | Eintrag |
-| --- | --- | --- |
-| **A** Sciebo-Konto/Ordner | Sciebo-Adresse | `https://uni-koeln.sciebo.de` (steht schon da) |
-| | Sciebo-Benutzername | Teil **vor dem letzten @** deiner Sciebo-ID, z. B. `name@uni-koeln.de` |
-| | Sciebo-App-Passwort | aus Sciebo → Sicherheit |
-| | Ordner in Sciebo | leer = ganzes Konto; sonst Pfad aus der Sciebo-Adresszeile nach `dir=`, z. B. `/Sign-Gruppe` |
-| | Knopf | **Testen + als Speicherort hinzufügen** |
-| **B** Freigabelink | Freigabelink | `https://uni-koeln.sciebo.de/s/…` |
-| | Link-Passwort | falls gesetzt |
-| | Knopf | **Testen + als Speicherort hinzufügen** (probiert zwei Schnittstellen nacheinander) |
-| **C** Nextcloud in Sciebo sichtbar | Deine Sciebo-ID | z. B. `name@uni-koeln.de@uni-koeln.sciebo.de` |
-| | Ordner in deiner Nextcloud | z. B. `SignTest` |
-| | Knopf | **In Sciebo sichtbar machen** |
+### 4a · Nextcloud-Ordner in Sciebo sichtbar machen
+| In der App | Danach von Hand |
+| --- | --- |
+| Sciebo-ID einfügen (wird gemerkt) → Ordner wählen → **Teilen und Sciebo öffnen** | Sciebo öffnet sich im neuen Tab → anmelden → **Glocke** → **annehmen** |
 
-Grün bei A oder B: Das Ziel erscheint unter **3 · Speicherorte → Direkte Ziele** und ist angehakt; die nächste Aufnahme geht auch dorthin.
+### 4b · Sciebo-Ordner in die Nextcloud holen (zum Hineinspeichern)
+| In der App | Danach von Hand |
+| --- | --- |
+| Sciebo-Freigabelink einfügen → **Link öffnen** (deine Nextcloud-ID wird dabei kopiert) | auf der Sciebo-Seite **„Zu deiner Nextcloud hinzufügen“** → ID einfügen → bestätigen |
+| **Nextcloud öffnen zum Annehmen** | in der Nextcloud **Glocke** → **annehmen** |
+| **3 · Ordner laden** → Sciebo-Ordner anhaken | – |
 
-### Danach von Hand
-| Wo | Was | Wann |
-| --- | --- | --- |
-| **Sciebo** → Glocke oben | Freigabe **annehmen** | nach Weg C (oder nach G) |
-| **Nextcloud** → Externer Speicher | Sciebo eintragen (F bzw. Abschnitt „Ordner, die dir freigegeben wurden“) | wenn A oder B rot waren |
-
-Zugänge aus A und B liegen nur in diesem Browser (bis der Tab schließt, oder dauerhaft mit „Sciebo-Zugänge merken“). „entfernen“ unter 3 löscht sie; in Sciebo das App-Passwort widerrufen, wenn der Test vorbei ist.
+Hineinspeichern geht nur, wenn die Sciebo-Freigabe Hochladen/Bearbeiten erlaubt.
 
 ---
 
