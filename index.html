@@ -48,8 +48,13 @@
               background:var(--sc); color:#1d1b20; text-decoration:none; }
   a.btnlink[aria-disabled="true"] { opacity:.45; pointer-events:none; }
   .tree .row { padding:4px 0; }
-  .badge { font-size:11px; border-radius:99px; padding:1px 8px; margin-left:6px; background:#e3f1e4; color:#1b5e20; white-space:nowrap; }
-  @media (prefers-color-scheme: dark) { .badge { background:#1f3a22; color:#b7dfb9; } }
+  .badge { font-size:11px; border-radius:99px; padding:1px 8px; margin-left:6px; white-space:nowrap; }
+  .badge.out { background:#e3f1e4; color:#1b5e20; }   /* ich habe freigegeben */
+  .badge.in  { background:#e3edf8; color:#0d3c6e; }   /* mit mir geteilt */
+  .badge.mnt { background:#efece6; color:#4a463f; }   /* eingebunden */
+  @media (prefers-color-scheme: dark) {
+    .badge.out { background:#1f3a22; color:#b7dfb9; } .badge.in { background:#14304d; color:#b9d4ee; } .badge.mnt { background:#38352f; color:#ddd8cf; }
+  }
   .box { font-family:ui-monospace,monospace; font-size:12px; background:var(--bg); border:1px solid var(--line);
          border-radius:8px; padding:6px; display:block; word-break:break-all; margin-top:6px; }
 </style>
@@ -94,7 +99,10 @@
   <details id="secTargets">
     <summary>3 · Speicherorte („immer speichern“)</summary>
     <p class="mut">Alle Ordner deiner Nextcloud (bis 3 Ebenen tief) – auch Sciebo-Ordner, die du in die Nextcloud geholt hast (4b).
-      Jede Aufnahme geht in alle angehakten Ordner. <span class="badge">→ Sciebo</span> = bereits an Sciebo freigegeben.</p>
+      Jede Aufnahme geht in alle angehakten Ordner.<br>
+      <span class="badge in">← mit mir geteilt</span> von anderen bekommen und angenommen ·
+      <span class="badge mnt">⇄ eingebunden</span> externer Speicher ·
+      <span class="badge out">→ an andere Cloud</span> von mir freigegeben (ob dort schon angenommen, sieht die Nextcloud nicht)</p>
     <button id="bList">Ordner laden</button>
     <div id="targets" class="tree"></div>
   </details>
@@ -210,13 +218,28 @@ async function req(method, url, { headers = {}, body } = {}) {
   if (!r.ok) throw new Error(`${method} → ${r.status} ${r.statusText}`);
   return r;
 }
+// Neben Name und Typ liest die App, was die Nextcloud über das Teilen weiß (alles über WebDAV, also im Browser erlaubt):
+//   oc:share-types   → was ICH freigegeben habe: 0 Person, 1 Gruppe, 3 Link, 6 andere Cloud (z. B. Sciebo)
+//   oc:permissions   → enthält „S“, wenn der Ordner MIT MIR geteilt wurde, „M“, wenn er eingebunden ist
+//   nc:mount-type    → „shared“ (mit mir geteilt), „external“ (externer Speicher) …
+//   oc:owner-display-name → wem der Ordner gehört
+const OC = "http://owncloud.org/ns", NC = "http://nextcloud.org/ns";
 async function propfind(path = "") {
-  const xml = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>';
+  const xml = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns" xmlns:nc="http://nextcloud.org/ns"><d:prop>' +
+    '<d:resourcetype/><oc:share-types/><oc:permissions/><nc:mount-type/><oc:owner-display-name/></d:prop></d:propfind>';
   const r = await req("PROPFIND", davRoot(acc) + "/" + encPath(path), { headers: { Depth: "1", "Content-Type": "application/xml" }, body: xml });
   const doc = new DOMParser().parseFromString(await r.text(), "application/xml");
+  const txt = (n, ns, tag) => { const e = n.getElementsByTagNameNS(ns, tag)[0]; return e ? e.textContent.trim() : ""; };
   return [...doc.getElementsByTagNameNS("DAV:", "response")].map(n => {
     const href = decodeURIComponent(n.getElementsByTagNameNS("DAV:", "href")[0].textContent).replace(/\/$/, "");
-    return { name: href.split("/").pop(), dir: n.getElementsByTagNameNS("DAV:", "collection").length > 0 };
+    return {
+      name: href.split("/").pop(),
+      dir: n.getElementsByTagNameNS("DAV:", "collection").length > 0,
+      shareTypes: [...n.getElementsByTagNameNS(OC, "share-type")].map(e => Number(e.textContent)),
+      perms: txt(n, OC, "permissions"),
+      mountType: txt(n, NC, "mount-type"),
+      owner: txt(n, OC, "owner-display-name"),
+    };
   }).slice(1); // erster Eintrag ist der Ordner selbst
 }
 async function mkcol(path) {
@@ -349,7 +372,7 @@ async function loadTree(maxDepth = 3, maxCount = 200) {
     }
     for (const it of items) {
       const p = path ? `${path}/${it.name}` : it.name;
-      out.push({ path: p, depth });
+      out.push({ path: p, depth, info: it });
       if (depth + 1 < maxDepth) queue.push({ path: p, depth: depth + 1 });
     }
   }
@@ -378,19 +401,38 @@ async function loadShares() {
     }
   } catch { /* Freigaben nicht lesbar – Baum trotzdem anzeigen */ }
 }
-function badgeText(path) { const ids = sharedTo.get(path); return ids && ids.length ? "→ Sciebo" + (ids.length > 1 ? " ×" + ids.length : "") : ""; }
+// Drei verschiedene Dinge, drei Markierungen:
+//   ← mit mir geteilt : jemand hat MIR den Ordner gegeben und ich habe angenommen (sonst stünde er nicht im Baum)
+//   ⇄ eingebunden     : externer Speicher (z. B. Sciebo-Link)
+//   → freigegeben     : ICH habe den Ordner weitergegeben (an andere Cloud, per Link, an Personen/Gruppen)
+function badgesFor(node) {
+  const i = node.info || {}, out = [];
+  const incoming = i.mountType === "shared" || /S/.test(i.perms || "");
+  const mounted = i.mountType === "external" || (!incoming && /M/.test(i.perms || ""));
+  if (incoming) out.push({ cls: "in", text: "← mit mir geteilt" + (i.owner ? " von " + i.owner : "") });
+  if (mounted) out.push({ cls: "mnt", text: "⇄ eingebunden" });
+  const t = new Set(i.shareTypes || []);
+  const ids = sharedTo.get(node.path) || [];
+  if (t.has(6) || ids.length) out.push({ cls: "out", text: "→ an andere Cloud", title: ids.join(", ") });
+  if (t.has(3)) out.push({ cls: "out", text: "→ per Link" });
+  if (t.has(0) || t.has(1)) out.push({ cls: "out", text: "→ an Personen" });
+  return out;
+}
+function badgeText(path) { const n = tree.find(x => x.path === path); return n ? badgesFor(n).map(b => b.text).join(" · ") : ""; }
 
 function drawTree() {
   const sel = getTargets();
   $("#targets").innerHTML = "";
   for (const { path, depth } of tree) {
     const name = path.split("/").pop();
+    // (Markierungen siehe badgesFor)
     const row = document.createElement("label"); row.className = "row"; row.style.paddingLeft = (depth * 18) + "px";
     const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = sel.includes(path);
     cb.onchange = () => { const t = getTargets().filter(x => x !== path); if (cb.checked) t.push(path); setTargets(t); };
     row.append(cb, document.createTextNode(" " + name));
-    const b = badgeText(path);
-    if (b) { const sp = document.createElement("span"); sp.className = "badge"; sp.textContent = b; sp.title = sharedTo.get(path).join(", "); row.append(sp); }
+    for (const b of badgesFor(tree.find(x => x.path === path))) {
+      const sp = document.createElement("span"); sp.className = "badge " + b.cls; sp.textContent = b.text; if (b.title) sp.title = b.title; row.append(sp);
+    }
     $("#targets").append(row);
   }
   // dieselbe Liste als Auswahl für 4a, mit Einrückung und Markierung
@@ -399,7 +441,8 @@ function drawTree() {
   for (const { path, depth } of tree) {
     const o = document.createElement("option");
     o.value = path;
-    o.textContent = "\u00a0\u00a0".repeat(depth) + path.split("/").pop() + (badgeText(path) ? "  ✓ an Sciebo" : "");
+    const isOut = badgesFor(tree.find(x => x.path === path)).some(b => b.text === "→ an andere Cloud");
+    o.textContent = "\u00a0\u00a0".repeat(depth) + path.split("/").pop() + (isOut ? "  ✓ schon freigegeben" : "");
     $("#sFolder").append(o);
   }
   if (tree.some(t => t.path === keep)) $("#sFolder").value = keep;
@@ -408,7 +451,8 @@ async function renderTargets() {
   tree = await loadTree();
   await loadShares();
   drawTree();
-  log(`${tree.length} Ordner geladen${sharedTo.size ? `, ${sharedTo.size} davon an Sciebo freigegeben` : ""}.`, "ok");
+  const n = k => tree.filter(t => badgesFor(t).some(b => b.cls === k)).length;
+  log(`${tree.length} Ordner geladen: ${n("out")} von dir freigegeben, ${n("in")} mit dir geteilt, ${n("mnt")} eingebunden.`, "ok");
 }
 $("#bList").onclick = () => renderTargets().catch(e => log(e.message, "err"));
 
