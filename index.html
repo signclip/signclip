@@ -134,7 +134,7 @@
     <a id="aDirect" class="btnlink" href="#" target="_blank" rel="noopener" aria-disabled="true">Direkt in meine Nextcloud übernehmen</a>
     <ol class="mut">
       <li><b>Vorher</b> in diesem Browser bei deiner Nextcloud angemeldet sein – sonst gehen die Angaben bei der Anmeldung verloren.</li>
-      <li><b>Direkt in meine Nextcloud übernehmen</b>: Deine Nextcloud öffnet sich und fragt „Freigabe hinzufügen?“ – ohne Sciebo-Seite, ohne ID eintippen.</li>
+      <li><b>Direkt in meine Nextcloud übernehmen</b>: Deine Nextcloud öffnet sich direkt bei <b>Ausstehende Freigaben</b> und fragt „Freigabe hinzufügen?“ – ohne Sciebo-Seite, ohne ID eintippen.</li>
       <li><b>Hinzufügen</b> bestätigen (bei Passwort-Link das Link-Passwort eingeben).</li>
       <li>Zurück hier: <b>3 · Ordner laden</b> → den Ordner anhaken.</li>
     </ol>
@@ -499,7 +499,7 @@ function updateDirect() {
     remote: p.remote, token: p.token, owner: "Sciebo", ownerDisplayName: "Sciebo",
     name: $("#sName").value.trim() || "Sciebo-Freigabe", protected: $("#sProt").checked ? "1" : "0",
   });
-  a.href = `${acc.server}/index.php/apps/files/#${q.toString()}`;
+  a.href = `${acc.server}/apps/files/pendingshares#${q.toString()}`; // landet direkt bei „Ausstehende Freigaben“
   a.setAttribute("aria-disabled", "false");
 }
 for (const id of ["#sLink", "#sName"]) $(id).addEventListener("input", updateDirect);
