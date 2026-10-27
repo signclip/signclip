@@ -132,11 +132,13 @@
     <label>Name des Ordners in deiner Nextcloud</label>
     <input type="text" id="sName" value="Sciebo-Freigabe">
     <label><input type="checkbox" id="sProt"> Der Link hat ein Passwort</label>
-    <a id="aDirect" class="btnlink" href="#" target="_blank" rel="noopener" aria-disabled="true">Direkt in meine Nextcloud übernehmen</a>
+    <a id="aDirect" class="btnlink" href="#" target="signNextcloud" aria-disabled="true">Direkt in meine Nextcloud übernehmen</a>
+    <button id="bReloadNc" hidden style="background:var(--rc)">Weiter: Ausstehende Freigaben neu laden</button>
     <ol class="mut">
       <li><b>Vorher</b> in diesem Browser bei deiner Nextcloud angemeldet sein – sonst gehen die Angaben bei der Anmeldung verloren.</li>
       <li><b>Direkt in meine Nextcloud übernehmen</b>: Deine Nextcloud öffnet sich direkt bei <b>Ausstehende Freigaben</b> und fragt „Freigabe hinzufügen?“ – ohne Sciebo-Seite, ohne ID eintippen.</li>
       <li><b>Hinzufügen</b> bestätigen (bei Passwort-Link das Link-Passwort eingeben).</li>
+      <li>Zurück hier: <b>Weiter: Ausstehende Freigaben neu laden</b> – derselbe Nextcloud-Tab zeigt die Freigabe frisch an → <b>annehmen</b>.</li>
       <li>Zurück hier: <b>3 · Ordner laden</b> → den Ordner anhaken.</li>
     </ol>
     <p class="mut">Falls deine Nextcloud nicht fragt – alter Weg über die Sciebo-Seite. Sciebo ist ein anderer Server: Die App kann dort nichts
@@ -534,7 +536,28 @@ function updateDirect() {
 }
 for (const id of ["#sLink", "#sName"]) $(id).addEventListener("input", updateDirect);
 $("#sProt").addEventListener("change", updateDirect);
-$("#aDirect").addEventListener("click", () => { if ($("#aDirect").getAttribute("aria-disabled") === "false") log("Nextcloud geöffnet: „Freigabe hinzufügen?“ bestätigen. Danach hier unter 3 „Ordner laden“."); });
+// Ablauf in zwei Schritten im SELBEN Nextcloud-Tab (Name „signNextcloud“):
+//   1. Direkt-Link: Nextcloud fragt „Freigabe hinzufügen?“ → bestätigen
+//   2. zurück in der App: „Weiter: Ausstehende Freigaben neu laden“ → derselbe Tab lädt die Seite frisch, die neue Freigabe steht da
+// Automatisch nachladen kann die App den fremden Tab nicht – darum ein Tipp, sobald du zurück bist.
+const pendingUrl = () => `${acc.server}/apps/files/pendingshares`;
+$("#aDirect").addEventListener("click", () => {
+  if ($("#aDirect").getAttribute("aria-disabled") !== "false") return;
+  log("Nextcloud geöffnet: „Freigabe hinzufügen?“ bestätigen – dann zurück hierher und „Weiter: Ausstehende Freigaben neu laden“.");
+  $("#bReloadNc").hidden = false;
+});
+$("#bReloadNc").onclick = () => {
+  if (!acc) return;
+  window.open(pendingUrl(), "signNextcloud"); // selber Tab, frisch geladen
+  log("Ausstehende Freigaben neu geladen: dort annehmen. Danach „Prüfen: schon in meiner Nextcloud?“.");
+};
+// Zurück in der App: Knopf hervorheben, damit der nächste Schritt sofort sichtbar ist.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && !$("#bReloadNc").hidden) {
+    $("#secSciebo").open = true;
+    $("#bReloadNc").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+});
 
 $("#bOpenLink").onclick = async () => {
   const l = $("#sLink").value.trim();
@@ -577,7 +600,7 @@ $("#bCheckIn").onclick = async () => {
 };
 $("#bOpenNc").onclick = () => {
   if (!acc) return log("Erst anmelden (Abschnitt 1).", "err");
-  window.open(`${acc.server}/apps/files/pendingshares`, "_blank", "noopener"); // Ansicht „Ausstehende Freigaben“
+  window.open(pendingUrl(), "signNextcloud"); // Ansicht „Ausstehende Freigaben“, immer derselbe Tab (wird dabei frisch geladen)
   log("Nextcloud geöffnet bei „Ausstehende Freigaben“ → annehmen (oder oben über die Glocke). Danach hier unter 3 „Ordner laden“.");
 };
 
