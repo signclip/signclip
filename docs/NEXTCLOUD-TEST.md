@@ -100,6 +100,45 @@ Kommt eine **Warnung**, bitte den genauen Text melden. Häufige Ursachen:
 
 ---
 
+## J. Direkt-Versuche in der App (Abschnitt 4)
+
+Drei Wege, die in der App selbst ausprobiert werden. **A und B werden im Browser voraussichtlich rot** (Sciebo erlaubt Browser-Apps von fremden Adressen keinen Zugriff). Rot heißt dann: Weg geht erst mit der Handy-App – im Browser F bzw. G nutzen.
+
+### Einmal vorher, von Hand
+| Wo | Was | Wofür |
+| --- | --- | --- |
+| **Nextcloud** → Verwaltungseinstellungen → **WebAppPassword** | beim Feld für **Files sharing** ebenfalls `https://signclip.github.io` eintragen | Weg C |
+| **Sciebo** → Einstellungen → **Sicherheit** | App-Passwort erstellen (Name z. B. `Sign Test`), kopieren | Weg A |
+| **Sciebo** → Einstellungen → **Teilen** | deine **Federated Cloud ID** kopieren | Weg C |
+| **Sciebo** → Ordner → Teilen → Link | Link mit **„Hochladen und Bearbeiten“** (und Passwort) | Weg B |
+
+### In der App eintragen
+| Weg | Feld | Eintrag |
+| --- | --- | --- |
+| **A** Sciebo-Konto/Ordner | Sciebo-Adresse | `https://uni-koeln.sciebo.de` (steht schon da) |
+| | Sciebo-Benutzername | Teil **vor dem letzten @** deiner Sciebo-ID, z. B. `name@uni-koeln.de` |
+| | Sciebo-App-Passwort | aus Sciebo → Sicherheit |
+| | Ordner in Sciebo | leer = ganzes Konto; sonst Pfad aus der Sciebo-Adresszeile nach `dir=`, z. B. `/Sign-Gruppe` |
+| | Knopf | **Testen + als Speicherort hinzufügen** |
+| **B** Freigabelink | Freigabelink | `https://uni-koeln.sciebo.de/s/…` |
+| | Link-Passwort | falls gesetzt |
+| | Knopf | **Testen + als Speicherort hinzufügen** (probiert zwei Schnittstellen nacheinander) |
+| **C** Nextcloud in Sciebo sichtbar | Deine Sciebo-ID | z. B. `name@uni-koeln.de@uni-koeln.sciebo.de` |
+| | Ordner in deiner Nextcloud | z. B. `SignTest` |
+| | Knopf | **In Sciebo sichtbar machen** |
+
+Grün bei A oder B: Das Ziel erscheint unter **3 · Speicherorte → Direkte Ziele** und ist angehakt; die nächste Aufnahme geht auch dorthin.
+
+### Danach von Hand
+| Wo | Was | Wann |
+| --- | --- | --- |
+| **Sciebo** → Glocke oben | Freigabe **annehmen** | nach Weg C (oder nach G) |
+| **Nextcloud** → Externer Speicher | Sciebo eintragen (F bzw. Abschnitt „Ordner, die dir freigegeben wurden“) | wenn A oder B rot waren |
+
+Zugänge aus A und B liegen nur in diesem Browser (bis der Tab schließt, oder dauerhaft mit „Sciebo-Zugänge merken“). „entfernen“ unter 3 löscht sie; in Sciebo das App-Passwort widerrufen, wenn der Test vorbei ist.
+
+---
+
 ## H. Was hier sicher ist
 
 - **Im Repo:** nur Code. Keine Adresse, kein Benutzername, kein Passwort.
