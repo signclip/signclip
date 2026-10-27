@@ -120,14 +120,20 @@
     <h3>4b · Sciebo-Ordner in die Nextcloud holen (zum Hineinspeichern)</h3>
     <label>Sciebo-Freigabelink</label>
     <input type="url" id="sLink" placeholder="https://uni-koeln.sciebo.de/s/…">
-    <button id="bOpenLink">Link öffnen</button>
-    <button id="bOpenNc">Nextcloud öffnen zum Annehmen</button>
+    <label>Name des Ordners in deiner Nextcloud</label>
+    <input type="text" id="sName" value="Sciebo-Freigabe">
+    <label><input type="checkbox" id="sProt"> Der Link hat ein Passwort</label>
+    <a id="aDirect" class="btnlink" href="#" target="_blank" rel="noopener" aria-disabled="true">Direkt in meine Nextcloud übernehmen</a>
     <ol class="mut">
-      <li><b>Link öffnen</b>: Sciebo öffnet sich, deine Nextcloud-ID ist schon kopiert.</li>
-      <li>Auf der Sciebo-Seite <b>„Zu deiner Nextcloud hinzufügen“</b> wählen → ID einfügen → bestätigen.</li>
-      <li><b>Nextcloud öffnen zum Annehmen</b> → oben auf die <b>Glocke</b> → <b>annehmen</b>.</li>
-      <li>Zurück hier: <b>3 · Ordner laden</b> → den Sciebo-Ordner anhaken.</li>
+      <li><b>Vorher</b> in diesem Browser bei deiner Nextcloud angemeldet sein – sonst gehen die Angaben bei der Anmeldung verloren.</li>
+      <li><b>Direkt in meine Nextcloud übernehmen</b>: Deine Nextcloud öffnet sich und fragt „Freigabe hinzufügen?“ – ohne Sciebo-Seite, ohne ID eintippen.</li>
+      <li><b>Hinzufügen</b> bestätigen (bei Passwort-Link das Link-Passwort eingeben).</li>
+      <li>Zurück hier: <b>3 · Ordner laden</b> → den Ordner anhaken.</li>
     </ol>
+    <p class="mut">Falls deine Nextcloud nicht fragt – alter Weg über die Sciebo-Seite. Sciebo ist ein anderer Server: Die App kann dort nichts
+      vorausfüllen, darum wird deine Nextcloud-ID beim Öffnen kopiert und du fügst sie bei „Zu deiner Nextcloud hinzufügen“ ein.</p>
+    <button id="bOpenLink">Über Sciebo-Seite (ID wird kopiert)</button>
+    <button id="bOpenNc">Nextcloud öffnen zum Annehmen</button>
     <p class="mut">Deine Nextcloud-ID:</p>
     <span class="box" id="fedId">– erst anmelden –</span>
   </details>
@@ -234,6 +240,7 @@ $("#bConnect").onclick = async () => {
     showWho();
     log(`Angemeldet. ${items.filter(i => i.dir).length} Ordner gefunden, „SignTest“ ist bereit.`, "ok");
     await renderTargets();
+    updateDirect();
     $("#secRec").open = true;
   } catch (e) { acc = null; showWho(); log("Anmelden: " + e.message, "err"); }
 };
@@ -429,6 +436,24 @@ $("#bShare").onclick = async () => {
 };
 
 // ───────────────────────── 4b. Sciebo-Ordner in die Nextcloud holen ─────────────────────────
+// Direktweg: Die eigene Nextcloud kennt eine Adresse, mit der sie einen öffentlichen Link eines anderen Servers
+// als Ordner hinzufügt. Sie fragt dann selbst „Freigabe hinzufügen?“ – genau das, was die Sciebo-Seite sonst
+// über „Zu deiner Nextcloud hinzufügen“ auslöst. Die Angaben stehen hinter „#“ und gehen an keinen Server.
+function linkParts(l) { const m = (l || "").trim().match(/^(https:\/\/[^/]+)\/(?:index\.php\/)?s\/([A-Za-z0-9]+)/); return m ? { remote: m[1], token: m[2] } : null; }
+function updateDirect() {
+  const a = $("#aDirect"), p = linkParts($("#sLink").value);
+  if (!acc || !p) { a.href = "#"; a.setAttribute("aria-disabled", "true"); return; }
+  const q = new URLSearchParams({
+    remote: p.remote, token: p.token, owner: "Sciebo", ownerDisplayName: "Sciebo",
+    name: $("#sName").value.trim() || "Sciebo-Freigabe", protected: $("#sProt").checked ? "1" : "0",
+  });
+  a.href = `${acc.server}/index.php/apps/files/#${q.toString()}`;
+  a.setAttribute("aria-disabled", "false");
+}
+for (const id of ["#sLink", "#sName"]) $(id).addEventListener("input", updateDirect);
+$("#sProt").addEventListener("change", updateDirect);
+$("#aDirect").addEventListener("click", () => { if ($("#aDirect").getAttribute("aria-disabled") === "false") log("Nextcloud geöffnet: „Freigabe hinzufügen?“ bestätigen. Danach hier unter 3 „Ordner laden“."); });
+
 $("#bOpenLink").onclick = async () => {
   const l = $("#sLink").value.trim();
   if (!/^https:\/\/[^/]+\/(index\.php\/)?s\/[A-Za-z0-9]+/.test(l)) return log("Bitte einen Sciebo-Freigabelink einfügen (…/s/…).", "err");
@@ -454,6 +479,7 @@ if (acc && !acc.server) acc = null; // altes Format
 if (acc) { $("#cid").value = ncId(acc); $("#remember").checked = !!store.get("nc", ""); }
 $("#sFed").value = store.get("scieboId", "");
 updateScieboLink();
+updateDirect();
 showWho();
 if (acc) renderTargets().catch(e => log(e.message, "err"));
 if (!window.isSecureContext) log("Achtung: Seite läuft nicht über https – Kamera ist gesperrt.", "err");
