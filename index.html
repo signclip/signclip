@@ -60,6 +60,8 @@
     <label>Benutzername</label><input type="text" id="usr" autocomplete="username">
     <label>App-Passwort</label><input type="password" id="pw" autocomplete="current-password">
     <label><input type="checkbox" id="remember"> Auf diesem Gerät merken (sonst nur bis zum Schließen des Tabs)</label>
+    <label>Verwaltungshelfer-Adresse (optional, für Konten und Sciebo – siehe docs/NEXTCLOUD-TEST.md, Abschnitt G)</label>
+    <input type="url" id="helper" placeholder="https://sign-helfer.<name>.workers.dev" autocomplete="off">
     <button id="bConnect">Verbinden + testen</button>
     <button id="bForget">Auf diesem Gerät vergessen</button>
   </details>
@@ -111,6 +113,11 @@
     <label>Passwort des Freigabelinks (falls gesetzt)</label><input type="password" id="sPw" autocomplete="off">
     <label>Ordnername in deiner Nextcloud</label><input type="text" id="sName" value="Sciebo Uni Köln">
     <button id="bMount">Mit einem Klick einbinden</button>
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <p class="mut"><b>Umgekehrt – Nextcloud-Ordner in Sciebo sichtbar machen (nur ansehen):</b> Deine Sciebo-Adresse steht in Sciebo unter Einstellungen → Teilen („Federated Cloud ID“). Danach in Sciebo über die Glocke annehmen.</p>
+    <label>Deine Sciebo-Adresse</label><input type="text" id="sFed" placeholder="name@uni-koeln.sciebo.de">
+    <label>Ordner in deiner Nextcloud</label><input type="text" id="sFolder" value="SignTest">
+    <button id="bShareToSciebo">In Sciebo sichtbar machen</button>
   </details>
 
   <!-- 5. VERWALTUNG ---------------------------------------------------------------->
@@ -121,7 +128,7 @@
     <label>Anzeigename</label><input type="text" id="aName" placeholder="z. B. Test Person">
     <label>Benutzer-ID</label><input type="text" id="aId" placeholder="wird vorgeschlagen">
     <label>E-Mail (optional)</label><input type="email" id="aMail">
-    <label>Gruppe</label><input type="text" id="aGroup" value="sign-teilnehmende">
+    <label>Gruppe</label><input type="text" id="aGroup" value="Sign-Students">
     <label>Speicherkontingent</label><input type="text" id="aQuota" value="5 GB">
     <label>Höchstens neue Konten in dieser Sitzung</label><input type="number" id="aMax" value="3" min="0" max="20">
     <button id="bCreate">Konto anlegen + Einladung erzeugen</button>
@@ -173,6 +180,10 @@ function forgetAcc() {
 const base = a => a.server.trim().replace(/\/+$/, "");
 const host = a => base(a).replace(/^https?:\/\//, "");
 const encPath = p => p.split("/").map(encodeURIComponent).join("/");
+// Verwaltungs-Schnittstellen (Konten, Freigaben, App-Passwörter) laufen über den Verwaltungshelfer, wenn eingetragen.
+// Dateien (WebDAV) gehen immer direkt an die Nextcloud.
+const getHelper = () => { try { return (localStorage.getItem("helper") || "").trim().replace(/\/+$/, ""); } catch { return ""; } };
+const apiBase = a => getHelper() || base(a);
 const davRoot = a => `${base(a)}/remote.php/dav/files/${encodeURIComponent(a.user)}`;
 
 function showWho() {
@@ -195,7 +206,7 @@ async function req(method, url, { a = acc, headers = {}, body } = {}) {
 }
 // OCS = Verwaltungs-Schnittstelle von Nextcloud (Benutzer, Freigaben, App-Passwörter)
 async function ocs(method, path, params, a = acc) {
-  const url = base(a) + path + (path.includes("?") ? "&" : "?") + "format=json";
+  const url = apiBase(a) + path + (path.includes("?") ? "&" : "?") + "format=json";
   const body = params ? new URLSearchParams(params) : undefined;
   const headers = { "OCS-APIRequest": "true" };
   if (body) headers["Content-Type"] = "application/x-www-form-urlencoded";
@@ -235,6 +246,11 @@ $("#bConnect").onclick = async () => {
     showWho();
     log(`T1 bestanden: Verbindung ok, ${items.length} Einträge im Hauptordner.`, "ok");
   } catch (e) { acc = null; showWho(); log("T1/T3 nicht bestanden: " + e.message, "err"); }
+};
+$("#helper").onchange = () => {
+  const v = $("#helper").value.trim();
+  try { v ? localStorage.setItem("helper", v) : localStorage.removeItem("helper"); } catch {}
+  log(v ? "Verwaltungshelfer gespeichert." : "Verwaltungshelfer entfernt – Verwaltung geht direkt an die Nextcloud.", "ok");
 };
 $("#bForget").onclick = () => { forgetAcc(); log("Zugang auf diesem Gerät vergessen. (Das App-Passwort selbst gilt weiter – widerrufen in Nextcloud → Sicherheit.)"); };
 
@@ -397,7 +413,7 @@ $("#bMount").onclick = async () => {
     mountOptions: {}
   };
   try {
-    const r = await req("POST", `${base(acc)}/index.php/apps/files_external/userstorages`, {
+    const r = await req("POST", `${apiBase(acc)}/index.php/apps/files_external/userstorages`, {
       headers: { "OCS-APIRequest": "true", "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(body)
     });
@@ -407,6 +423,19 @@ $("#bMount").onclick = async () => {
   } catch (e) {
     log("Variante B fehlgeschlagen: " + e.message + " – App „Externer Speicher“ und Nutzer-Einbindung prüfen, sonst Variante A nutzen.", "err");
   }
+};
+
+// Nextcloud-Ordner per föderiertem Teilen an die Sciebo-Adresse geben, nur Lesen (permissions=1).
+$("#bShareToSciebo").onclick = async () => {
+  if (!acc) return log("Erst verbinden.", "err");
+  const fed = $("#sFed").value.trim(), folder = $("#sFolder").value.trim().replace(/^\/+|\/+$/g, "");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fed)) return log("Sciebo-Adresse im Format name@uni-koeln.sciebo.de eintragen.", "err");
+  if (!folder) return log("Ordner angeben.", "err");
+  try {
+    await mkcol(folder);
+    const d = await ocs("POST", "/ocs/v2.php/apps/files_sharing/api/v1/shares", new URLSearchParams({ path: "/" + folder, shareType: "6", shareWith: fed, permissions: "1" }));
+    log(`„${folder}“ an ${fed} freigegeben (nur Lesen, ID ${d.id}). Jetzt in Sciebo über die Glocke annehmen.`, "ok");
+  } catch (e) { log("In Sciebo sichtbar machen: " + e.message + (getHelper() ? "" : " – ohne Verwaltungshelfer blockiert der Browser diese Schnittstelle."), "err"); }
 };
 
 // ───────────────────────── 5. Verwaltung: Konto + Einladung ─────────────────────────
@@ -434,7 +463,7 @@ $("#bCreate").onclick = async () => {
     tempPw = null; // verwerfen
     log("T5 bestanden: App-Passwort für das neue Konto erzeugt.", "ok");
 
-    const payload = { v: 1, s: base(acc), u: userid, p: d.apppassword, n: displayName };
+    const payload = { v: 1, s: base(acc), u: userid, p: d.apppassword, n: displayName, h: getHelper() || undefined };
     const link = location.origin + location.pathname + "#join=" + b64url(JSON.stringify(payload));
     $("#invite").innerHTML = "";
     const box = document.createElement("span"); box.className = "box"; box.textContent = link;
@@ -456,6 +485,7 @@ async function handleJoin() {
   let j;
   try { j = JSON.parse(unb64url(m[1])); } catch { log("Einladungslink beschädigt.", "err"); return true; }
   const a = { server: j.s, user: j.u, pw: j.p };
+  if (j.h) { try { localStorage.setItem("helper", j.h); } catch {} } // Verwaltungshelfer aus der Einladung übernehmen
   try {
     const d = await ocs("POST", "/ocs/v2.php/core/apppassword/rotate", null, a); // altes App-Passwort wird ungültig
     a.pw = d.apppassword;
@@ -473,6 +503,7 @@ async function handleJoin() {
 (async () => {
   if (!(await handleJoin())) { acc = loadAcc(); }
   if (acc) { $("#srv").value = acc.server; $("#usr").value = acc.user; }
+  $("#helper").value = getHelper();
   showWho();
   if (!window.isSecureContext) log("Achtung: Seite läuft nicht über https – Kamera und Krypto sind gesperrt.", "err");
 })();

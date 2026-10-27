@@ -33,10 +33,10 @@ Das ist die **App-Adresse**. Der Teil vor dem ersten einzelnen Schrägstrich (vo
 1. **App installieren:** oben rechts Profilbild → **Apps** → suchen nach **WebAppPassword** → **Herunterladen und aktivieren**
 2. **Ursprung erlauben:** Profilbild → **Verwaltungseinstellungen** → links **WebAppPassword** → bei den erlaubten Ursprüngen den Ursprung aus A eintragen (voraussichtlich `https://signclip.github.io`) → speichern
    (genau so, ohne `/signclip`, ohne Schrägstrich am Ende)
-3. **Gruppen:** Profilbild → **Konten** (bzw. Benutzer) → links **Gruppe hinzufügen**: `sign-teilnehmende`, `sign-verwaltung`
+3. **Gruppen:** Profilbild → **Konten** (bzw. Benutzer) → links **Gruppe hinzufügen**: `Sign-Students`, `sign-verwaltung`
 4. **Dein Alltagskonto** (nicht der Admin):
    - in die Gruppe `sign-verwaltung`
-   - in der Spalte **Gruppenadministrator für** die Gruppe `sign-teilnehmende` eintragen
+   - in der Spalte **Gruppenadministrator für** die Gruppe `Sign-Students` eintragen
 5. **Für Sciebo mit einem Klick (Variante B):** Profilbild → **Apps** → **Externer Speicher** (External storage support) aktivieren → **Verwaltungseinstellungen** → links **Externer Speicher** → unten **„Benutzern erlauben, externen Speicher einzubinden“** anhaken und nur **WebDAV** erlauben
 6. **App-Passwort für den Test:** mit deinem Alltagskonto anmelden → Profilbild → **Persönliche Einstellungen** → **Sicherheit** → unten bei „Geräte & Sitzungen“ Namen eingeben (z. B. `Sign Test Browser`) → **Neues App-Passwort erstellen** → Benutzername und Passwort werden **einmal** angezeigt → in den Passwortmanager kopieren
 
@@ -63,6 +63,37 @@ Bitte schreib mir für jeden Schritt **grün oder rot** und bei Rot den Text aus
 
 ---
 
+## G. Verwaltungshelfer: Konten und Sciebo mit einem Klick aus dem Browser
+
+**Warum:** WebAppPassword öffnet für den Browser nur den Dateizugang. Konten anlegen, Einladungen, Sciebo einbinden und an Sciebo freigeben laufen über die Verwaltungs-Schnittstelle der Nextcloud – die blockiert der Browser. Ein kleiner Helfer im Netz reicht genau diese Anfragen an deine Nextcloud weiter (Server zu Server, ohne Sperre). Videos laufen **nicht** darüber.
+
+**Was du abwägen solltest:** Über den Helfer läuft dein App-Passwort bei Verwaltungsanfragen durch Cloudflare (verschlüsselt bis Cloudflare, dort entschlüsselt und weitergeschickt). Der Helfer speichert nichts, aber du vertraust damit Cloudflare. Ohne Helfer gehen diese Aufgaben nur in der Nextcloud-Weboberfläche.
+
+**Einrichten (nur Klicks, kostenlos, kein Entwickler-Konto):**
+1. Auf **cloudflare.com** ein kostenloses Konto anlegen (E-Mail genügt)
+2. Links **Workers & Pages** → **Erstellen** → **Worker erstellen** → Name `sign-helfer` → **Bereitstellen**
+3. **Code bearbeiten** → alles im Editor löschen → den Inhalt von [`tools/nc-helper/worker.js`](../tools/nc-helper/worker.js) einfügen → **Bereitstellen**
+4. Beim Worker **Einstellungen** → **Variablen und Geheimnisse** → hinzufügen:
+   - `NC_URL` = deine Nextcloud-Adresse, z. B. `https://nx12345.your-storageshare.de` (ohne Schrägstrich am Ende)
+   - `ALLOWED_ORIGINS` = `https://signclip.github.io`
+   → **Bereitstellen**
+5. Oben steht die Adresse des Helfers, z. B. `https://sign-helfer.<name>.workers.dev` → kopieren
+6. In der Test-App unter **1 · Verbindung** ins Feld **Verwaltungshelfer-Adresse** einfügen (wird beim Verlassen des Feldes gespeichert)
+
+Die Nextcloud-Adresse steht damit nur in den Cloudflare-Einstellungen, nicht im Code und nicht auf GitHub.
+
+**Danach mit einem Klick in der App:**
+| Abschnitt | Knopf | Was passiert |
+| --- | --- | --- |
+| 5 · Verwaltung | Konto anlegen + Einladung erzeugen | Konto in `Sign-Students`, App-Passwort, Einladungslink (enthält auch die Helfer-Adresse) |
+| 4 · Sciebo | Mit einem Klick einbinden | Sciebo-Link wird Ordner in deiner Nextcloud → in 3 anhaken → Aufnahmen gehen nach Sciebo |
+| 4 · Sciebo | In Sciebo sichtbar machen | Nextcloud-Ordner wird an deine Sciebo-Adresse freigegeben (nur Lesen) → in Sciebo über die Glocke annehmen |
+| 4 · Sciebo | Ausstehende Freigaben laden → Annehmen | Sciebo-Freigaben in deiner Nextcloud annehmen |
+
+**Abschalten:** Helfer-Adresse in der App leeren, oder in Cloudflare den Worker löschen. Dein App-Passwort in der Nextcloud widerrufen, wenn du sicher gehen willst.
+
+---
+
 ## D. Was hier sicher ist – und was nicht
 
 - **Im Repo:** nur Code. Keine Adresse, kein Benutzername, kein Passwort.
@@ -70,7 +101,7 @@ Bitte schreib mir für jeden Schritt **grün oder rot** und bei Rot den Text aus
 - **Zufallspasswort neuer Konten:** existiert nur für Sekunden im Speicher und wird danach verworfen.
 - **Einladungslink:** enthält einen Zugang hinter `#` (geht an keinen Server). Beim ersten Öffnen wird er ausgetauscht und ist danach wertlos.
 - **Gerät verloren oder Test vorbei:** in der Nextcloud unter **Sicherheit** das App-Passwort `Sign Test Browser` **widerrufen**. „Auf diesem Gerät vergessen“ in der App löscht nur die Kopie im Browser.
-- **Grenze:** höchstens 3 neue Konten pro Sitzung (in Schritt 5 einstellbar). Dein Konto kann ohnehin nur Konten in `sign-teilnehmende` anlegen.
+- **Grenze:** höchstens 3 neue Konten pro Sitzung (in Schritt 5 einstellbar). Dein Konto kann ohnehin nur Konten in `Sign-Students` anlegen.
 
 ---
 
@@ -81,7 +112,7 @@ Bitte schreib mir für jeden Schritt **grün oder rot** und bei Rot den Text aus
 | „Keine Antwort – meist CORS …“ bei Schritt 1 | Ursprung in WebAppPassword fehlt oder ist falsch geschrieben | B2 prüfen: Ursprung aus A, ohne Pfad und ohne Schrägstrich am Ende |
 | Schritt 1 grün, aber Schritt 4 oder 5 „Keine Antwort“ | WebAppPassword erlaubt nur Dateien, nicht die Verwaltungs-Schnittstelle | Ergebnis melden → dann Notweg: Konten in der Weboberfläche anlegen |
 | `401` | App-Passwort oder Benutzername falsch | neues App-Passwort erzeugen |
-| `OCS 997` / `403` bei Schritt 5 | Konto ist kein Gruppenadministrator von `sign-teilnehmende` | B4 prüfen |
+| `OCS 997` / `403` bei Schritt 5 | Konto ist kein Gruppenadministrator von `Sign-Students` | B4 prüfen |
 | `OCS 102` bei Schritt 5 | Benutzer-ID gibt es schon | andere ID eintragen |
 | `OCS 107` bei Schritt 5 | Passwortregeln der Nextcloud | melden |
 | Speichern in Sciebo-Ordner `403` | Sciebo-Link erlaubt kein Hochladen | in Sciebo Freigabe auf „Hochladen und Bearbeiten“ stellen |
