@@ -105,6 +105,12 @@
     <div id="pending"></div>
     <button id="bRemote">Eingebundene Freigaben anzeigen</button>
     <div id="remote"></div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <p class="mut"><b>Variante B – ein Klick (Test):</b> Deine Nextcloud bindet den Freigabelink direkt als Ordner ein (Server zu Server).
+      Voraussetzung: Admin hat die App „Externer Speicher“ aktiviert und Nutzern erlaubt, WebDAV-Speicher einzubinden.</p>
+    <label>Passwort des Freigabelinks (falls gesetzt)</label><input type="password" id="sPw" autocomplete="off">
+    <label>Ordnername in deiner Nextcloud</label><input type="text" id="sName" value="Sciebo Uni Köln">
+    <button id="bMount">Mit einem Klick einbinden</button>
   </details>
 
   <!-- 5. VERWALTUNG ---------------------------------------------------------------->
@@ -370,6 +376,36 @@ $("#bRemote").onclick = async () => {
     }
     log(`${list.length} eingebundene Freigabe(n). Jetzt in Abschnitt 3 „Ordner laden“ und anhaken.`, "ok");
   } catch (e) { log("Eingebundene Freigaben: " + e.message, "err"); }
+};
+
+// Variante B: Freigabelink als persönlichen externen WebDAV-Speicher einbinden.
+// Die eigene Nextcloud spricht Sciebo direkt an (Server zu Server) – der Browser nie, also kein CORS-Problem.
+// Ein öffentlicher Link https://<host>/s/<token> ist per WebDAV erreichbar unter https://<host>/public.php/webdav
+// mit dem Token als Benutzername und dem Link-Passwort als Passwort.
+$("#bMount").onclick = async () => {
+  if (!acc) return log("Erst verbinden.", "err");
+  const m = $("#sLink").value.trim().match(/^https:\/\/([^/]+)\/(?:index\.php\/)?s\/([A-Za-z0-9]+)/);
+  if (!m) return log("Link nicht erkannt. Erwartet: https://…sciebo.de/s/<Kennung>", "err");
+  const [, linkHost, token] = m;
+  const name = ($("#sName").value.trim() || "Sciebo").replace(/[\/\\]/g, "-");
+  const body = {
+    mountPoint: "/" + name,
+    backend: "dav",
+    authMechanism: "password::password",
+    backendOptions: { host: linkHost, root: "public.php/webdav", secure: true, user: token, password: $("#sPw").value },
+    mountOptions: {}
+  };
+  try {
+    const r = await req("POST", `${base(acc)}/index.php/apps/files_external/userstorages`, {
+      headers: { "OCS-APIRequest": "true", "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body)
+    });
+    const d = await r.json().catch(() => ({}));
+    $("#sPw").value = "";
+    log(`T7b: „${name}“ eingebunden${d.status ? " (Status " + d.status + ")" : ""}. Jetzt in Abschnitt 3 „Ordner laden“ und anhaken.`, "ok");
+  } catch (e) {
+    log("Variante B fehlgeschlagen: " + e.message + " – App „Externer Speicher“ und Nutzer-Einbindung prüfen, sonst Variante A nutzen.", "err");
+  }
 };
 
 // ───────────────────────── 5. Verwaltung: Konto + Einladung ─────────────────────────

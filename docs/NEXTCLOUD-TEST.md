@@ -37,7 +37,8 @@ Das ist die **App-Adresse**. Der Teil vor dem ersten einzelnen Schrägstrich (vo
 4. **Dein Alltagskonto** (nicht der Admin):
    - in die Gruppe `sign-verwaltung`
    - in der Spalte **Gruppenadministrator für** die Gruppe `sign-teilnehmende` eintragen
-5. **App-Passwort für den Test:** mit deinem Alltagskonto anmelden → Profilbild → **Persönliche Einstellungen** → **Sicherheit** → unten bei „Geräte & Sitzungen“ Namen eingeben (z. B. `Sign Test Browser`) → **Neues App-Passwort erstellen** → Benutzername und Passwort werden **einmal** angezeigt → in den Passwortmanager kopieren
+5. **Für Sciebo mit einem Klick (Variante B):** Profilbild → **Apps** → **Externer Speicher** (External storage support) aktivieren → **Verwaltungseinstellungen** → links **Externer Speicher** → unten **„Benutzern erlauben, externen Speicher einzubinden“** anhaken und nur **WebDAV** erlauben
+6. **App-Passwort für den Test:** mit deinem Alltagskonto anmelden → Profilbild → **Persönliche Einstellungen** → **Sicherheit** → unten bei „Geräte & Sitzungen“ Namen eingeben (z. B. `Sign Test Browser`) → **Neues App-Passwort erstellen** → Benutzername und Passwort werden **einmal** angezeigt → in den Passwortmanager kopieren
 
 ---
 
@@ -47,10 +48,11 @@ App-Adresse am Handy oder Rechner öffnen.
 
 | Schritt in der App | Was du tust | Ergebnis im Protokoll |
 | --- | --- | --- |
-| **1 · Verbindung** | Nextcloud-Adresse, Benutzername und App-Passwort aus B5 eintragen → **Verbinden + testen** | grün „T1 bestanden“ – rot „Keine Antwort“ heißt meist: Ursprung in B2 stimmt nicht |
+| **1 · Verbindung** | Nextcloud-Adresse, Benutzername und App-Passwort aus B6 eintragen → **Verbinden + testen** | grün „T1 bestanden“ – rot „Keine Antwort“ heißt meist: Ursprung in B2 stimmt nicht |
 | **3 · Speicherorte** | **Ordner „SignTest“ anlegen** → **Ordner laden** → „SignTest“ ist angehakt | grün |
 | **2 · Aufnahme** | **Kamera an** → **Start** → kurz gebärden → **Stopp** → **Speichern** | grün „gespeichert in SignTest“; in der Nextcloud liegen Video + `.json` |
 | **4 · Sciebo** | Freigabelink einfügen → **Adresse kopieren** → **Sciebo-Seite öffnen** → dort „Zu deiner Nextcloud hinzufügen“ und die kopierte Adresse einfügen → zurück → **Ausstehende Freigaben laden** → **Annehmen** | grün „T7 bestanden“ |
+| **4 · Sciebo, Variante B** | Freigabelink einfügen, ggf. Link-Passwort, Ordnername → **Mit einem Klick einbinden** | grün „T7b“ |
 | **3 · Speicherorte** | **Ordner laden** → den Sciebo-Ordner zusätzlich anhaken → neue Aufnahme speichern | grün für beide Ordner; die Datei erscheint in Sciebo (nur, wenn der Link Hochladen erlaubt) |
 | **5 · Verwaltung** | Anzeigename eintragen → **Konto anlegen + Einladung erzeugen** | grün T4 und T5, darunter der Einladungslink |
 | **Einladung** | Link in einem **anderen** Browser oder privaten Fenster öffnen | grün „T6 bestanden: Willkommen …“ |
@@ -83,6 +85,8 @@ Bitte schreib mir für jeden Schritt **grün oder rot** und bei Rot den Text aus
 | `OCS 102` bei Schritt 5 | Benutzer-ID gibt es schon | andere ID eintragen |
 | `OCS 107` bei Schritt 5 | Passwortregeln der Nextcloud | melden |
 | Speichern in Sciebo-Ordner `403` | Sciebo-Link erlaubt kein Hochladen | in Sciebo Freigabe auf „Hochladen und Bearbeiten“ stellen |
+| „Variante B fehlgeschlagen … 403/404“ | App „Externer Speicher“ aus oder Nutzer-Einbindung nicht erlaubt | B5 prüfen, sonst Variante A |
+| Variante B grün, aber Ordner leer/rot | Sciebo erlaubt den Zugriff über diesen Weg nicht | Ergebnis melden, Variante A nutzen |
 | „captureStream fehlt“ | Browser zu alt | anderen Browser versuchen |
 
 ---
@@ -97,6 +101,7 @@ Bitte schreib mir für jeden Schritt **grün oder rot** und bei Rot den Text aus
 | Konto anlegen | `POST /ocs/v1.php/cloud/users` | Nextcloud Provisioning-Schnittstelle |
 | App-Passwort erzeugen | `GET /ocs/v2.php/core/getapppassword` (mit dem echten Passwort des neuen Kontos) | Nextcloud Login Flow |
 | Einladung annehmen | `POST /ocs/v2.php/core/apppassword/rotate` (altes App-Passwort wird ungültig) | Nextcloud App-Passwort-Schnittstelle |
+| Sciebo mit einem Klick | `POST /index.php/apps/files_external/userstorages` (WebDAV-Speicher auf `https://<sciebo>/public.php/webdav`, Token als Benutzer) | Nextcloud Externer Speicher |
 | Sciebo-Freigaben | `GET/POST /ocs/v2.php/apps/files_sharing/api/v1/remote_shares/pending` | Nextcloud föderiertes Teilen |
 | Quadratisches Video | Kamerabild auf ein quadratisches `canvas` zeichnen, davon aufnehmen (`MediaRecorder`) | Web-Standards |
 
