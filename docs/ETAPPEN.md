@@ -11,14 +11,14 @@ Vier Etappen und eine separate Welle für SL2T, von der ersten Person bis zur Fr
 - **Die App wächst mit.** Zuerst Lern-App (Etappe 2), in Etappe 3 DGS-Suite zum Lernen, Glätten und Modellieren. Alles läuft lokal in der App, bis die separate SL2T-Welle beginnt.
 - **Offen in Stufen.** Erst einzelne Personen, dann eine Hochschule, dann weitere, dann ein breiterer Kreis.
 - **Weitergabe an Dritte ist immer eine eigene Entscheidung** in einer eigenen Welle, nie Teil einer anderen Einwilligung.
-- **Ressourcen früh und ehrlich erklären.** Nicht nur Geld, auch Zeit, Wissen und Aufnahmen. Keine Pflicht, keine Zähler.
+- **Ressourcen früh und ehrlich erklären.** In jeder Etappe gibt es einen Ressourcenpunkt und die Erklärung, wohin es geht. Keine Zähler, keine Liste der Gebenden.
 - **Die Plattform bleibt eine persönliche Suchbibliothek zum Lernen**, auch wenn Modelle später weltweit eingebunden werden.
 
 ## Übersicht
 
 | Etappe | Kreis | Die App ist | Kern und Ergebnis | Ungefähre Phase in `architektur.md` |
 | --- | --- | --- | --- | --- |
-| **1 Lernen und Ablegen** | einzelne Personen, privat | Browser-Werkzeug | Lernen, erstes Speichern in der eigenen Nextcloud, persönliche Ressourcen und Anträge. Ergebnis: Konzept erklärt, Speichern und Wiederfinden funktioniert | 0 |
+| **1 Lernen und Ablegen** | einzelne Personen, privat | Browser-Werkzeug | Lernen, erstes Speichern in der eigenen Nextcloud, Ressourcen-Interface für Einzelne. Ergebnis: Konzept erklärt, Speichern und Wiederfinden funktioniert | 0 |
 | **2 Hochschulraum und App** | Lernende und Lehrende, zuerst eine Hochschule, dann weitere | **Lern-App** | Lokales Speichern, Auswahl was zur Nextcloud fließt, Referenzen, erster Satz Landmarks und Videos, Erkennung, Echtzeit-Suche. Ergebnis: Datensatz, auf dem ein visuelles Erkennungsmodell läuft | 1–2 |
 | **3 Weiterer Kreis und Gesprächswelle** | weiterer Benutzerkreis | **DGS-Suite** | Gesprächswelle für die eigenen Modelle. Lernen, Glätten, Modellieren: Visuell zu Visuell, Visuell zu Text, Text zu Visuell, lokal in der App. Ergebnis: Modellpakete als Prototyp | 3–5 |
 | **Welle SL2T (separat)** | alle, die ausdrücklich zustimmen | DGS-Suite wie zuvor | Eigener Trainingsschritt mit eigener Einwilligung, Zeitpunkt offen | – |
@@ -26,14 +26,25 @@ Vier Etappen und eine separate Welle für SL2T, von der ersten Person bis zur Fr
 
 Parallel läuft die Spur **Partner und Anbieter** und ab Etappe 2 die Spur **Oberfläche erkunden**.
 
+## Ressourcen-Interface
+
+Ein eigener, freier Bereich, getrennt von der Teilnahme. Er entsteht in Etappe 1 im Browser, zieht später in die App um und wächst mit jeder Etappe (siehe „Ressourcenpunkt“ dort).
+
+- **Nachricht:** Kontakt aufnehmen. Gruß, Hinweis, Idee, Wunsch.
+- **Ressourcen ohne Geld:** Zeit, Wissen, Aufnahmen, Prüfung (Konzept in `infrastructure.md`, Abschnitt 8).
+- **Ressourcen mit Geld:** einmalig oder regelmäßig über **PayPal**. Die Zahlung läuft über einen Link zu PayPal, in der App liegen keine Zahlungsdaten. Ob regelmäßige Zahlungen für das eigene PayPal-Konto möglich sind, ist bei PayPal zu prüfen.
+- **Ebenen:** einzeln (privat, persönlich), Gruppe (das Gleiche), Hochschule oder Institution (regelmäßig, mit Vereinbarung).
+- **Rahmen:** Rechtsform und Steuern vorher klären. Wird für eine Zahlung eine Gegenleistung erwartet (z. B. Nutzung durch eine Hochschule), ist es keine Spende, sondern braucht eine Vereinbarung. Das ist keine Rechts- oder Steuerberatung.
+
 ## Etappe 1: Lernen und Ablegen
 
 **Ziel:** Das Konzept lernen und erklären, die ersten Aufnahmen in der eigenen Nextcloud ablegen und wiederfinden. Alles, was nicht ausdrücklich zu Etappe 2 gehört, gehört hierher.
 
 - Jede Person bekommt in der eigenen Nextcloud einen eigenen Bereich. Das trägt schon am Start.
 - Aufnehmen, speichern und wiederfinden im Browser (PWA). Die App und lokales Speichern kommen in Etappe 2.
-- **Ressourcen privat:** Schon hier können Einzelne Ressourcen geben, und vor allem werden **Anträge vorangetrieben** (z. B. Hochschulrechenzeit, Förderung). Der Bereich „Beitragen“ ist freiwillig, ohne Zähler, und erklärt, wohin es geht. Konzept: `infrastructure.md`, Abschnitt 8. Rechtsform und Spendenfragen vorher klären.
 - **Vorher testen** (aus `architektur.md`, Testtag): CORS für die Browser-App, Sciebo als externer Speicher, föderiertes Teilen, Schreib- und Lese-Konto, Einladungslink.
+
+**Ressourcenpunkt: einzeln, privat und persönlich.** Das Ressourcen-Interface wird gebaut: Nachricht zum Kontaktaufnehmen, Ressourcen auch finanziell, einmalig oder regelmäßig, über PayPal. Es erklärt, wohin es geht.
 
 **Ergebnis nach außen:** Kurzvideo „Eine Person, eine Bibliothek“ und die Erklärung, wohin das Projekt geht.
 
@@ -51,6 +62,13 @@ Parallel läuft die Spur **Partner und Anbieter** und ab Etappe 2 die Spur **Obe
 6. **Suche visuell zu visuell in Echtzeit,** sobald genug Landmarks und Videos bereitstehen. Ab welcher Menge, ist zu testen (siehe Entscheidungen).
 7. **Erste Gespräche.** Schon hier dürfen Gespräche, also Übergänge, aufgenommen werden. Die gezielte Sammlung folgt in Etappe 3.
 
+**Ressourcenpunkt: Gruppen, Hochschulen und Lernende.**
+
+- **Gruppen:** das gleiche Angebot wie bei Einzelnen (Nachricht, Ressourcen auch finanziell, einmalig oder regelmäßig). Dazu der **Übergang zur Großplattform** (siehe Entscheidungen).
+- **Lernende:** mögliche **Lizenzierung** (was lizenziert wird und unter welchen Bedingungen, ist zu klären, Regel 5).
+- **Hochschulen und Lernende:** regelmäßige Ressourcen, mit der Erwartung, Sign **zum Lernen nutzen zu können**.
+- **Lehrende:** mit der Erwartung, **korrigieren** zu können (Prüfspur) und **zur Modellierung beitragen** zu können.
+
 **Ergebnis nach außen:** Beispiel eines Kurses mit Vorlagen, Aufnahmen und geprüften Varianten, dazu die Echtzeit-Suche.
 
 ## Etappe 3: Weiterer Kreis und Gesprächswelle
@@ -67,6 +85,14 @@ Parallel läuft die Spur **Partner und Anbieter** und ab Etappe 2 die Spur **Obe
    - **Glätten** von Übergängen zwischen Clips und von Bewegung
    - **Modellieren** in drei Richtungen: **Visuell zu Visuell** (Suche und Ähnlichkeit, schon ab Etappe 2), **Visuell zu Text** (Prototyp), **Text zu Visuell** (Zusammenstellung aus der Bibliothek mit geglätteten Übergängen)
 
+**Ressourcenpunkt: große Gruppe.** Ressourcen im Sinne der allgemeinen Nutzbarkeit, vor allem für das **persönliche Vokabular**, und je nach Art des Beitrags (Aufnahmen, Gespräche, Prüfung, Zeit, Technik). Ziel ist ein **erstes eigenes DGS-Modell mit qualitativen Aussagen**:
+
+- **Visuell zu Text** ist bereits nutzbar,
+- ein **riesiges Vokabular** entsteht durch das Hochschulangebot,
+- die Beiträge helfen, **Übergänge zu glätten**, und durch **Gespräche** wird das Offene (Satzfluss, Zusammenhänge) modelliert.
+
+Es wird ausdrücklich als Prototyp bezeichnet.
+
 **Größenordnung** für 220 Personen, 4 Wochen, je 30 Minuten Gespräch pro Woche und 10 Einzelgebärden pro Tag: etwa 440 h Gespräch (rund 0,5 TB Video, 18 GB Landmarks) plus 62.000 Einzelgebärden (rund 80 GB), zusammen rund 0,6 TB. Der knappe Punkt ist die gleichzeitige Last beim Abladen (Zeitfenster pro Gruppe), danach die GPU-Zeit.
 
 **Ergebnis nach außen:** Die DGS-Suite mit Modellpaketen, ausdrücklich als Prototyp bezeichnet.
@@ -77,12 +103,18 @@ Für SL2T gibt es einen **eigenen Trainingsschritt mit eigener Einwilligung**, g
 
 - **Eigene Einwilligung:** ausdrücklich, freiwillig, mit klarer Angabe, **was** (Landmarks oder Video), **für wen** (SL2T) und **wofür** (DGS in SL2T). Wer in Etappe 3 mitgemacht hat, ist **nicht automatisch** dabei. Wer ablehnt, hat keinen Nachteil.
 - **Widerruf:** entfernt die Dateien beim Empfänger, soweit möglich, kann aber ein bereits trainiertes Modell nicht ungeschehen machen. Das steht in der Einwilligung.
-- **Offen und zu klären:** Zeitpunkt, ob und wie Google Daten annimmt (bisher ist keine öffentliche Schnittstelle genannt), Bedingungen für die Nutzung des fertigen Modells, ein weiterer Ressourcenpunkt rund um die weltweite Einbindung des DGS-Modells.
+- **Offen und zu klären:** Zeitpunkt, ob und wie Google Daten annimmt (bisher ist keine öffentliche Schnittstelle genannt), Bedingungen für die Nutzung des fertigen Modells.
 - **Kommunikation:** Teilnehmende erfahren die Anbieterfrage rechtzeitig und regelmäßig, nicht erst im Moment des Abladens.
+
+**Ressourcenpunkt: weit herausgeben und zurückgeben.** Das Ergebnis kann weit herausgegeben werden (weltweite Einbindung des DGS-Modells). Dazu gehört eine **anteilige Rückgabe** an alle, die Daten eingespeist haben, oder ein **Bezug** dieser Menschen zu den Ergebnissen. Was das konkret heißt (Geld, Zugang, Nennung, Mitsprache), hängt davon ab, ob und was der Empfänger leistet. Es wird vorab geklärt und in die Einwilligung geschrieben.
+
+**Danach: Kommunikation offline.** Treffen vor Ort, um die Ergebnisse gemeinsam zu besprechen.
 
 ## Etappe 4: Wohin weiter
 
 Hier wird geschaut, wohin das Interface und die Erkenntnisse aus Modellierung und Glättung von Bewegungen weiter genutzt werden können: andere Gebärdensprachen, Physio, Sport, Handwerk, übergreifende multimodale Aufnahme und Ähnlichkeit. Voraussetzung ist, dass Gestenlogik und Datenmodell sich in Etappe 2 und 3 bewährt haben. Das Domänenfeld im Eintrag hält die Tür offen.
+
+**Ressourcenpunkt:** Die Nutzung des Interface-Designs für beliebige Anwendungen wird ein eigener Ressourcenpunkt. Die Details sind noch zu ergänzen.
 
 ## Parallele Spuren
 
@@ -118,6 +150,10 @@ Design und Bedienung für andere multimodale Anwendungen, ohne die erste Anwendu
 5. Welche Voreinstellung gilt für das Abladefenster in Etappe 3: nur Landmarks oder auch Videos?
 6. Laufen Übersetzungs- und Glättungsmodell lokal auf Telefon und Tablet (Größe, Tempo, Akku)? Das ist zu messen. Gesucht ist auch ein Rückfall, falls es nicht reicht.
 7. Wann beginnt Etappe 3, und bis wann muss ein Antrag auf Hochschulrechenzeit (NHR) gestellt sein?
-8. Rechtsform für den Bereich „Beitragen“ (privat, Hochschulprojekt, Verein).
+8. Rechtsform und Steuern für das Ressourcen-Interface und PayPal (privat, Hochschulprojekt, Verein). Sind regelmäßige Zahlungen über das PayPal-Konto möglich?
 9. Gibt es für die Sicht „wer hat was angesehen“ eine Lösung, die die Hochschulen akzeptieren?
 10. Welle SL2T: Zeitpunkt, ob und wie Google Daten annimmt, was beigetragen wird und unter welchen Bedingungen das Modell genutzt werden darf.
+11. Bleibt die Nutzung für Einzelne frei, und zahlen nur Hochschulen regelmäßig mit der Erwartung der Nutzung? Wo eine Gegenleistung erwartet wird, ist es keine Spende.
+12. Was heißt „Übergang zur Großplattform“ technisch und organisatorisch (z. B. größerer gemeinsamer Speicher und Verwaltung für Gruppen)?
+13. Was wird bei Lernenden lizenziert (Vorlagen, eigene Aufnahmen, Modell), und unter welchen Bedingungen?
+14. Welle SL2T: In welcher Form erfolgt die anteilige Rückgabe (Geld, Zugang, Nennung, Mitsprache)? Das ist nur möglich, wenn der Empfänger etwas leistet.
