@@ -35,6 +35,9 @@ Neuester Eintrag steht oben. Jeder Chat in diesem Projekt ergänzt hier nach ein
 - Thema: Abwägung zur Domain; Entwurf der Projektansicht mit Ressourcenpunkt je Etappe
 - Erledigt: Entwurf Projektansicht als Artifact (https://claude.ai/artifact/4qBJ82e2omh1LrjnNSdRAH): „Als Nächstes“, Etappen 1–4 und Welle SL2T als wachsende Kreise um den Kern, Ressourcenpunkt je Etappe, Bausteine mit Stand geprüft/im Test/geplant, Bereich „Beitragen“ (Nachricht, Zeit, Geld) ohne Zahlen, mit „Später“
 - Erledigt: Domain abgewogen – Vorschlag eine Domain mit Unteradressen (Projektseite, App, Nextcloud, Einladungslink); .de günstig bei Hetzner, .app international mit HTTPS-Pflicht; Verfügbarkeit nicht geprüft
+- Entschieden: Etappe 2 geteilt in 2a alle Lernenden und 2b Standardnutzung an der Hochschule mit Dozierenden (ggf. Lizenzierung); Etappe 3 geteilt in 3a breit nutzbar als Lern- und Übersetzungs-App (Ressourcen individuell, einmalig/regelmäßig) und 3b Ausblick Gespräche mit Crowdfunding-Schub für visuell zu visuell und visuell zu Text
+- Entschieden: Welle SL2T verknüpft mit Etappe 3, aufgesetzt auf dem ersten Testdatensatz (eigene Modellierung visuell zu visuell, Gespräche, Übergänge), Referenzierung und Lizenzierung an Google, Apple u. a.; Ressourcen einmalig/regelmäßig, App bleibt als Lern- und Übersetzungs-App im Original nutzbar; Etappe 4 „Beyond“ mit Nutzung des Designs, dual
+- Offen: Schutz und Lizenz für Design, Gestenkonzept, Kontext- und Line-Modell; Repo hat noch keine Lizenzdatei
 - Offen: Name und Endung der Domain; ob App und Nextcloud unter derselben Adresse laufen sollen (CORS)
 - Nächster Schritt: Entwurf ansehen; nach Freigabe als Seite ins Repo
 
