@@ -1,38 +1,74 @@
 # SignClip
 
-Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärdensprachbibliothek (DGS), später als gemeinsame Bibliothek für Lernende und Dolmetscher.
+> **Als Nächstes:** Kontext- und Verbindungsmodell anschauen und freigeben ([KONTEXT-UND-VERBINDUNG.md](KONTEXT-UND-VERBINDUNG.md), offene Punkte in Abschnitt 8). Danach das Design auf dem Modell aufbauen.
 
-**Stand:** Neustart. Die erste Version liegt in [`InitialVersion/`](InitialVersion/) und läuft dort weiter. Geändert wurden nur Dateipfade in Hinweisen, weil die Hilfsdateien dort jetzt auf einer Ebene liegen. Die neue App wird hier in `main` Schritt für Schritt von Grund auf gebaut, mit Fokus auf langlebige Datenmodelle und austauschbare Module.
+Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärdensprachbibliothek (DGS), später als gemeinsame Bibliothek für Lernende und Dolmetschende. Die erste Version liegt in [`InitialVersion/`](InitialVersion/) und läuft dort weiter (neue Adresse `…/InitialVersion/index.html`, wer sie installiert hat, installiert sie dort neu). Die neue App entsteht hier Schritt für Schritt von Grund auf.
 
-## Nextcloud-Test (vorübergehend)
+## Etappen
 
-`index.html` im Hauptordner ist zurzeit eine kleine Test-App: Verbindung zur eigenen Nextcloud, quadratische Aufnahme speichern, in mehrere Ordner speichern (auch eingebundene Sciebo-Ordner). Konten und Sciebo werden vorerst in der Nextcloud-Weboberfläche eingerichtet. Anleitung: [NEXTCLOUD-TEST.md](NEXTCLOUD-TEST.md). Im Code stehen keine Zugangsdaten. Nach dem Test wird die Datei durch die echte App ersetzt.
+| Etappe | Kreis | Kern |
+| --- | --- | --- |
+| **1 Lernen und Ablegen** ← jetzt | einzelne Personen | Aufnehmen, Speichern in der eigenen Nextcloud, Wiederfinden im Browser |
+| **2 Hochschulraum und App** | Lernende und Lehrende | Lern-App, lokal speichern, Referenzen, Landmarks, Glätten, Echtzeit-Suche |
+| **3 Weiterer Kreis und Gesprächswelle** | weiterer Kreis | DGS-Suite: Lernen, Glätten, Modellieren |
+| **Welle SL2T** | nur mit eigener Einwilligung | separater Trainingsschritt |
+| **4 Wohin weiter** | offen | andere Anwendungen für Oberfläche und Modelle |
 
-## Dokumente
+Details, Regeln und offene Entscheidungen: [ETAPPEN.md](ETAPPEN.md)
+
+## Bausteine
+
+**geprüft** = im echten Test erfolgreich · **im Test** = gebaut, Tests laufen, wartet auf Prüfung oder Freigabe · **geplant** = noch nicht gebaut
+
+| Baustein | Dateien | Stand |
+| --- | --- | --- |
+| Nextcloud-Ordner in Sciebo sichtbar machen | [FREIGABE-AN-SCIEBO.md](FREIGABE-AN-SCIEBO.md), [freigabe.js](freigabe.js), [Tests](freigabe.test.mjs) | geprüft (27.10.2026) |
+| Nextcloud-Test-App: anmelden, aufnehmen, in mehrere Ordner speichern | [index.html](index.html), [NEXTCLOUD-TEST.md](NEXTCLOUD-TEST.md) | im Test, wird später ersetzt |
+| Kontextmodell v1 (Chips, Klammern, Serie, Cluster) | [kontext.js](kontext.js), [Tests](kontext.test.mjs) | im Test |
+| Verbindungsmodell (Spuren, Verweise, Kern und Umgebung, Line) | [modell.js](modell.js), [Tests](modell.test.mjs), [Erklärung](KONTEXT-UND-VERBINDUNG.md) | im Test |
+| Leser für Aufnahmen der ersten Version | – | geplant |
+| Designsystem (Kern und Umgebung, feste Positionen, parallele Gesten, Farben, Schrift) | – | geplant, nach Freigabe des Modells |
+| Einladung: Konto, Willkommens-Mail, Anmelden, Sciebo verbinden | Entwurf (Einladungs-Karussell) im Claude-Projekt | geplant |
+| Eigene Domain für App und Nextcloud | – | geplant, kann parallel laufen |
+| Ressourcen-Bereich (Nachricht, Unterstützung über PayPal) | – | geplant (Etappe 1) |
+| Glätten als Rechenschritt in `derived/` | – | geplant (Etappe 2) |
+
+Alle Tests auf einmal: `node --test` im Hauptordner.
+
+## Ressourcen
+
+**Dokumente**
 
 | Dokument | Inhalt |
 | --- | --- |
-| [OVERVIEW.md](OVERVIEW.md) | Worum es geht, Ziele nach Zeithorizont, Nutzergruppen, Umfang |
-| [DESIGN.md](DESIGN.md) | Gestaltungsprinzipien, Gesten, Overview-Bildschirm, offene Designfragen |
-| [ETAPPEN.md](ETAPPEN.md) | Vier Etappen von der ersten Person bis zur übergreifenden Anwendung, Regeln, offene Entscheidungen |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Datenmodelle, Module, Abhängigkeiten, Bauplan in kleinen Schritten |
-| [RESEARCH.md](RESEARCH.md) | Forschungsfragen, Annahmen, was noch zu prüfen ist |
-| [NEXTCLOUD-TEST.md](NEXTCLOUD-TEST.md) | Vorübergehend: Anleitung zur Nextcloud-Test-App im Hauptordner |
+| [OVERVIEW.md](OVERVIEW.md) | Worum es geht, Ziele nach Zeithorizont, Rollen |
+| [ETAPPEN.md](ETAPPEN.md) | Etappen, Regeln, offene Entscheidungen |
+| [KONTEXT-UND-VERBINDUNG.md](KONTEXT-UND-VERBINDUNG.md) | Kontextmodell und Verbindungsmodell |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Module, Abhängigkeiten, Bauplan |
+| [DESIGN.md](DESIGN.md) | Gestaltungsregeln, Gesten, offene Designfragen |
+| [RESEARCH.md](RESEARCH.md) | Forschungsfragen und Annahmen |
+| [VERLAUF.md](VERLAUF.md) | Was wann entschieden und gebaut wurde |
+| Im Claude-Projekt „Sign“, noch nicht im Repo | `architektur.md`, `infrastructure.md`, `research.md` |
 
-## Bausteine (geprüft, für die endgültige Version)
+**Quellen**
 
-| Baustein | Was | Status |
-| --- | --- | --- |
-| [FREIGABE-AN-SCIEBO.md](FREIGABE-AN-SCIEBO.md), Code [freigabe.js](freigabe.js), Tests [freigabe.test.mjs](freigabe.test.mjs) | Nextcloud-Ordner per föderiertem Teilen in Sciebo sichtbar machen | im Test erfolgreich (27.10.2026) |
+- MediaPipe Hand Landmarker: [ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker)
+- Anbieter-Stand (SL2T, Apple): Links in [ETAPPEN.md](ETAPPEN.md), Abschnitt „Partner und Anbieter“
+- Erste Version mit Konzept: [InitialVersion/READme.md](InitialVersion/READme.md), [InitialVersion/ARCHITECTURE.md](InitialVersion/ARCHITECTURE.md)
 
-## Erste Version (`InitialVersion/`)
+**Werkzeuge**
 
-Eine PWA ohne Build-Schritt: `index.html`, `storage.js`, Service Worker, WebDAV-Proxy (`webdav-proxy.js`, Anleitung `WORKER.md`). Aufnehmen, Kontext vergeben, suchen, schneiden, zusammenfügen und per Ordner, Nextcloud/Sciebo oder Freigabelink speichern. Die Konzeptdokumente der ersten Version liegen im selben Ordner ([READme.md](InitialVersion/READme.md), [ARCHITECTURE.md](InitialVersion/ARCHITECTURE.md)).
-
-Wichtig beim Hosting: Alle Pfade sind relativ, die App funktioniert also weiter, nur unter `…/InitialVersion/index.html`. Wer sie bisher über die Hauptadresse installiert hat, muss die neue Adresse öffnen und neu installieren.
+| Werkzeug | Wofür |
+| --- | --- |
+| Eigene Nextcloud (Hetzner, 1 TB) | Speicher, Konten, Gruppe „Sign-Students“ |
+| Sciebo (Uni Köln) | Hochschulordner, eingebunden per föderierter Freigabe |
+| GitHub (dieses Repo, GitHub Pages) | Code, Dokumente, Hosting der Web-App |
+| Node.js | nur zum Ausführen der Tests |
+| Logseq | Notizen und Ideen |
 
 ## Arbeitsweise
 
 - Kleine Schritte, jeweils mit Zweck, Schnittstelle und Test, damit jeder Baustein verständlich bleibt.
 - Daten zuerst: Dateien und Begleitdatei sind die Wahrheit, alles andere ist neu berechenbar.
-- Die erste Version bleibt Referenz. Was dort funktioniert, wird bewusst übernommen und nicht zufällig kopiert.
+- Was ins Hauptprojekt geht, wird vorher angeschaut und freigegeben.
+- Im Code stehen keine Zugangsdaten.

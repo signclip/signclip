@@ -31,6 +31,14 @@ Neuester Eintrag steht oben. Jeder Chat in diesem Projekt ergänzt hier nach ein
 
 ## Einträge
 
+### 2026-10-28 · [T] Kontext- und Verbindungsmodell, Startseite
+- Komponente: kontext.js, modell.js mit Tests (51 Tests grün mit freigabe), KONTEXT-UND-VERBINDUNG.md; README als Startseite
+- Geändert: Jede Spur eigenständig mit Wer und Wann; Bild und Ton einer MP4 als zwei Spuren auf denselben Container (stream); berechnete Spuren mit Modell, Version, Quelle in derived/; Verbindungen „Was → Worauf“ (describes, version, similar, translation, review, edit); Verweise zeitlich (from/to) und räumlich (region); Line als eigene Datei; eine Datei = eine Person; sprachneutrale Schlüssel mit Bezeichnungstabelle de/en
+- Geändert: Kontextmodell v1 als Code: runde Klammer multipliziert aus, eckige ins Fingeralphabet, beide Wege zum Herausziehen eines Worts ergeben dasselbe; Serie und Cluster aus Klammern
+- Geändert: README mit „Als Nächstes“, Etappen, Bausteinen (geprüft/im Test/geplant), Ressourcen; Glätten (Endversion) in Etappe 2 aufgenommen
+- Nachbauen: `node --test` im Hauptordner; jeder Test ist ein Fall aus der Nutzung; keine Imports außer Node selbst
+- Offen: Annahmen in KONTEXT-UND-VERBINDUNG.md Abschnitt 8 bestätigen; Freigabe vor Übernahme in main
+
 ### 2026-10-28 · [T] Etappenplan und Ordner im Repo
 - Komponente: Repo signclip/signclip, ETAPPEN.md neu; Ordnerstruktur
 - Geändert: ETAPPEN.md mit vier Etappen, eigener SL2T-Welle (eigene Einwilligung), Ressourcenpunkt je Etappe; in Etappe 1 keine Anträge

@@ -2,7 +2,7 @@
 
 Vier Etappen und eine separate Welle für SL2T, von der ersten Person bis zur Frage, wohin Oberfläche und Erkenntnisse weitergetragen werden. Jede Etappe öffnet das Projekt für einen größeren Kreis, bündelt Ressourcen auf einen kurzen Zeitraum und endet mit etwas Sichtbarem, das sich einfach erklären lässt.
 
-**Stand:** Entwurf, überarbeitet am 27.10.2026 nach Rückmeldung. Zahlen stammen aus den Projektdokumenten `infrastructure.md` und `architektur.md` (Claude-Projekt „Sign“) und sind Schätzungen, nicht gemessen. Zuordnungen zu deren Phasen 0–6 sind ungefähr.
+**Stand:** Entwurf, überarbeitet am 27.10.2026 nach Rückmeldung, Glätten am 28.10.2026 nach Etappe 2 verschoben. Zahlen stammen aus den Projektdokumenten `infrastructure.md` und `architektur.md` (Claude-Projekt „Sign“) und sind Schätzungen, nicht gemessen. Zuordnungen zu deren Phasen 0–6 sind ungefähr.
 
 ## Leitidee
 
@@ -61,6 +61,7 @@ Ein eigener, freier Bereich, getrennt von der Teilnahme. Er entsteht in Etappe 1
 5. **Erster Datensatz und Erkennung.** Aus den bereitgestellten Landmarks und Videos entsteht der erste Satz, auf dem ein visuelles Erkennungsmodell läuft.
 6. **Suche visuell zu visuell in Echtzeit,** sobald genug Landmarks und Videos bereitstehen. Ab welcher Menge, ist zu testen (siehe Entscheidungen).
 7. **Erste Gespräche.** Schon hier dürfen Gespräche, also Übergänge, aufgenommen werden. Die gezielte Sammlung folgt in Etappe 3.
+8. **Glätten, Endversion.** Genaue Hintergrund- und Fingererkennung als Rechenschritt in `derived/`, neben dem Original (siehe [KONTEXT-UND-VERBINDUNG.md](KONTEXT-UND-VERBINDUNG.md), berechnete Spuren). Die Test-App speichert dafür schon Original und Einstellungen.
 
 **Ressourcenpunkt: Gruppen, Hochschulen und Lernende.**
 
@@ -82,7 +83,7 @@ Ein eigener, freier Bereich, getrennt von der Teilnahme. Er entsteht in Etappe 1
 5. **Rechnen und Release:** Modelle zentral in GPU-Stunden trainieren, einen eingefrorenen Release erzeugen und die Modellpakete in die App liefern. Danach Speicher zurück auf Basis, Originale in ein Kaltarchiv.
 6. **Die App wird zur DGS-Suite.** Alles läuft lokal:
    - **Lernen** wie in Etappe 2
-   - **Glätten** von Übergängen zwischen Clips und von Bewegung
+   - **Glätten** von Übergängen zwischen Clips und von Bewegung (das Glätten einzelner Aufnahmen steht schon in Etappe 2)
    - **Modellieren** in drei Richtungen: **Visuell zu Visuell** (Suche und Ähnlichkeit, schon ab Etappe 2), **Visuell zu Text** (Prototyp), **Text zu Visuell** (Zusammenstellung aus der Bibliothek mit geglätteten Übergängen)
 
 **Ressourcenpunkt: große Gruppe.** Ressourcen im Sinne der allgemeinen Nutzbarkeit, vor allem für das **persönliche Vokabular**, und je nach Art des Beitrags (Aufnahmen, Gespräche, Prüfung, Zeit, Technik). Ziel ist ein **erstes eigenes DGS-Modell mit qualitativen Aussagen**:

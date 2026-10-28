@@ -13,6 +13,8 @@ Ziel: wenige, klare Datenmodelle, die Jahrzehnte überdauern, und austauschbare 
 
 ## Kernmodelle
 
+> Abgelöst durch [KONTEXT-UND-VERBINDUNG.md](KONTEXT-UND-VERBINDUNG.md) (28.10.2026). Die Tabelle bleibt als Ausgangspunkt stehen, bis das neue Modell freigegeben ist.
+
 | Modell | Zweck | Wichtige Felder |
 | --- | --- | --- |
 | **Entry** (Eintrag) | Eine Aufnahme mit allem Zugehörigen | `id`, `author`, `created`, `tracks[]`, `context`, `markers[]`, `status`, `session?`, `segment?`, `term?`, `variant?`, `rights` |
