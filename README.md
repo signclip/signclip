@@ -15,8 +15,11 @@ Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärde
 | [OVERVIEW.md](OVERVIEW.md) | Worum es geht, Ziele nach Zeithorizont, Nutzergruppen, Umfang |
 | [DESIGN.md](DESIGN.md) | Gestaltungsprinzipien, Gesten, Overview-Bildschirm, offene Designfragen |
 | [ETAPPEN.md](ETAPPEN.md) | Vier Etappen von der ersten Person bis zur übergreifenden Anwendung, Regeln, offene Entscheidungen |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Datenmodelle, Module, Abhängigkeiten, Bauplan in kleinen Schritten |
-| [RESEARCH.md](RESEARCH.md) | Forschungsfragen, Annahmen, was noch zu prüfen ist |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Startweg mit eigener Nextcloud, Speicherrollen, Datenmodelle, Module, Phasen, Bauplan |
+| [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | Speicherbedarf und Kosten, Speicherklassen, Modelle, Sichtung, Teilnahme, Entscheidungen |
+| [RESEARCH.md](RESEARCH.md) | Recherche zu SL2T, DGS-Projekten, Datensätzen, Mustern aus anderen Bereichen; Lehren aus der ersten Version |
+| [VERLAUF.md](VERLAUF.md) | Projektverlauf (gleich wie im Claude-Projekt) |
+| [Einladung/](Einladung/README.md) | Instagram-Karussell zur Einladung: Quelldateien des Design-Canvas und Beschreibung |
 | [NEXTCLOUD-TEST.md](NEXTCLOUD-TEST.md) | Vorübergehend: Anleitung zur Nextcloud-Test-App im Hauptordner |
 
 ## Bausteine (geprüft, für die endgültige Version)

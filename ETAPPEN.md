@@ -2,7 +2,7 @@
 
 Vier Etappen und eine separate Welle für SL2T, von der ersten Person bis zur Frage, wohin Oberfläche und Erkenntnisse weitergetragen werden. Jede Etappe öffnet das Projekt für einen größeren Kreis, bündelt Ressourcen auf einen kurzen Zeitraum und endet mit etwas Sichtbarem, das sich einfach erklären lässt.
 
-**Stand:** Entwurf, überarbeitet am 27.10.2026 nach Rückmeldung. Zahlen stammen aus den Projektdokumenten `infrastructure.md` und `architektur.md` (Claude-Projekt „Sign“) und sind Schätzungen, nicht gemessen. Zuordnungen zu deren Phasen 0–6 sind ungefähr.
+**Stand:** Entwurf, überarbeitet am 27.10.2026 nach Rückmeldung. Zahlen stammen aus [INFRASTRUCTURE.md](INFRASTRUCTURE.md) und [ARCHITECTURE.md](ARCHITECTURE.md) und sind Schätzungen, nicht gemessen. Zuordnungen zu deren Phasen 0–6 sind ungefähr.
 
 ## Leitidee
 
@@ -16,7 +16,7 @@ Vier Etappen und eine separate Welle für SL2T, von der ersten Person bis zur Fr
 
 ## Übersicht
 
-| Etappe | Kreis | Die App ist | Kern und Ergebnis | Ungefähre Phase in `architektur.md` |
+| Etappe | Kreis | Die App ist | Kern und Ergebnis | Ungefähre Phase in `ARCHITECTURE.md` |
 | --- | --- | --- | --- | --- |
 | **1 Lernen und Ablegen** | einzelne Personen, privat | Browser-Werkzeug | Lernen, erstes Speichern in der eigenen Nextcloud, Ressourcen-Interface für Einzelne. Ergebnis: Konzept erklärt, Speichern und Wiederfinden funktioniert | 0 |
 | **2 Hochschulraum und App** | Lernende und Lehrende, zuerst eine Hochschule, dann weitere | **Lern-App** | Lokales Speichern, Auswahl was zur Nextcloud fließt, Referenzen, erster Satz Landmarks und Videos, Erkennung, Echtzeit-Suche. Ergebnis: Datensatz, auf dem ein visuelles Erkennungsmodell läuft | 1–2 |
@@ -31,7 +31,7 @@ Parallel läuft die Spur **Partner und Anbieter** und ab Etappe 2 die Spur **Obe
 Ein eigener, freier Bereich, getrennt von der Teilnahme. Er entsteht in Etappe 1 im Browser, zieht später in die App um und wächst mit jeder Etappe (siehe „Ressourcenpunkt“ dort).
 
 - **Nachricht:** Kontakt aufnehmen. Gruß, Hinweis, Idee, Wunsch.
-- **Ressourcen ohne Geld:** Zeit, Wissen, Aufnahmen, Prüfung (Konzept in `infrastructure.md`, Abschnitt 8).
+- **Ressourcen ohne Geld:** Zeit, Wissen, Aufnahmen, Prüfung (Konzept in `INFRASTRUCTURE.md`, Abschnitt 8).
 - **Ressourcen mit Geld:** einmalig oder regelmäßig über **PayPal**. Die Zahlung läuft über einen Link zu PayPal, in der App liegen keine Zahlungsdaten. Ob regelmäßige Zahlungen für das eigene PayPal-Konto möglich sind, ist bei PayPal zu prüfen.
 - **Ebenen:** einzeln (privat, persönlich), Gruppe (das Gleiche), Hochschule oder Institution (regelmäßig, mit Vereinbarung).
 - **Rahmen:** Rechtsform und Steuern vorher klären. Wird für eine Zahlung eine Gegenleistung erwartet (z. B. Nutzung durch eine Hochschule), ist es keine Spende, sondern braucht eine Vereinbarung. Das ist keine Rechts- oder Steuerberatung.
@@ -42,7 +42,7 @@ Ein eigener, freier Bereich, getrennt von der Teilnahme. Er entsteht in Etappe 1
 
 - Jede Person bekommt in der eigenen Nextcloud einen eigenen Bereich. Das trägt schon am Start.
 - Aufnehmen, speichern und wiederfinden im Browser (PWA). Die App und lokales Speichern kommen in Etappe 2.
-- **Vorher testen** (aus `architektur.md`, Testtag): CORS für die Browser-App, Sciebo als externer Speicher, föderiertes Teilen, Schreib- und Lese-Konto, Einladungslink.
+- **Vorher testen** (aus `ARCHITECTURE.md`, Testtag): CORS für die Browser-App, Sciebo als externer Speicher, föderiertes Teilen, Schreib- und Lese-Konto, Einladungslink.
 
 **Ressourcenpunkt: einzeln, privat und persönlich.** Das Ressourcen-Interface wird gebaut: Nachricht zum Kontaktaufnehmen, Ressourcen auch finanziell, einmalig oder regelmäßig, über PayPal. Es erklärt, wohin es geht.
 

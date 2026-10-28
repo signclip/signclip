@@ -31,6 +31,13 @@ Neuester Eintrag steht oben. Jeder Chat in diesem Projekt ergänzt hier nach ein
 
 ## Einträge
 
+### 2026-10-28 · [T] Projektdokumente und Einladungs-Design im Repo
+- Komponente: Repo signclip/signclip, Hauptebene und neuer Ordner `Einladung/`
+- Geändert: `ARCHITECTURE.md` vereint (Startweg mit eigener Nextcloud, Speicherrollen, Phasen aus `architektur.md` v2.2; Datenmodelle, Module, Bauplan aus der früheren Fassung; Begriffe Spur, Line, Context als vorläufig bis zum Kontext- und Verbindungsmodell)
+- Geändert: `INFRASTRUCTURE.md` neu aus `claude/infrastructure.md`, abgeglichen: eigene Nextcloud statt Sciebo als Hauptspeicher, Cloudflare-Worker verworfen, Entscheidungsliste mit Status; `RESEARCH.md` aus `research.md` plus Lehren aus der ersten Version und offene Fragen
+- Geändert: `Einladung/` mit den 6 Folien des Design-Canvas (Variante 1 und 2), `canvas.json` und Beschreibung; `README.md` und `ETAPPEN.md` verweisen auf die neuen Dateien
+- Offen: weitere Artifacts (Projektansicht, Ressourcen-Übersicht, Gesten und Spuren, Design Overview) sind noch nicht im Repo; die Projektdokumente im Claude-Projekt sind jetzt Kopien der Repo-Dateien und sollten künftig im Repo gepflegt werden
+
 ### 2026-10-28 · [S] Domain, Übersichtsseite und Ressourcenpunkte
 - Thema: Abwägung zur Domain; Entwurf der Projektansicht mit Ressourcenpunkt je Etappe
 - Erledigt: Entwurf Projektansicht als Artifact (https://claude.ai/artifact/4qBJ82e2omh1LrjnNSdRAH): „Als Nächstes“, Etappen 1–4 und Welle SL2T als wachsende Kreise um den Kern, Ressourcenpunkt je Etappe, Bausteine mit Stand geprüft/im Test/geplant, Bereich „Beitragen“ (Nachricht, Zeit, Geld) ohne Zahlen, mit „Später“
