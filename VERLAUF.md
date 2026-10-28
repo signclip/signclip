@@ -38,6 +38,14 @@ Neuester Eintrag steht oben. Jeder Chat in diesem Projekt ergänzt hier nach ein
 - Offen: Name und Endung der Domain; ob App und Nextcloud unter derselben Adresse laufen sollen (CORS)
 - Nächster Schritt: Entwurf ansehen; nach Freigabe als Seite ins Repo
 
+### 2026-10-28 · [S] Kontextmodell v1 und Research zu Kontext- und Wortmodellen
+- Thema: Kontextmodell v1 (Chips, Klammern) als Grundlage für das Verbindungsmodell
+- Entschieden: nur der Begriff „Context“, alles Weitere über die Art der Klammer; alle Chips eines Videos auf einer Ebene, Kategorien nachträglich oder aus den Klammer-Clustern vorhergesagt
+- Entschieden: runde Klammer = mit dem Davorstehenden ausmultiplizieren, bei einer Serie herausgenommen; eckige Klammer = komplett im Fingeralphabet, Buchstabe für Buchstabe, Leerzeichen zählen
+- Erledigt: Research zu bestehenden Modellen – DGS-Korpus-Glossen ($ALPHA), ELAN-Spuren, HamNoSys/SignWriting, OntoLex-Lemon, Facettenklassifikation, Brace Expansion, W3C Web Annotation + Media Fragments, PROV-O
+- Offen: wie ein ganzes Wort aus der eckigen Klammer herausgezogen wird (eckige Klammer schließen und wieder öffnen oder runde Klammer)
+- Nächster Schritt: Dokument und Datenschema mit Tests für Kontext- und Verbindungsmodell
+
 ### 2026-10-28 · [T] Etappenplan und Ordner im Repo
 - Komponente: Repo signclip/signclip, ETAPPEN.md neu; Ordnerstruktur
 - Geändert: ETAPPEN.md mit vier Etappen, eigener SL2T-Welle (eigene Einwilligung), Ressourcenpunkt je Etappe; in Etappe 1 keine Anträge
