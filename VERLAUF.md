@@ -31,6 +31,11 @@ Neuester Eintrag steht oben. Jeder Chat in diesem Projekt ergänzt hier nach ein
 
 ## Einträge
 
+### 2026-10-28 · [T] Einladung als Bilder im Repo
+- Geändert: `Einladung/` enthält jetzt die drei Folienbilder (Variante 2, 2160 × 2700 px) und die Beschreibung; die Canvas-Quelldateien (`.dc.html`, `canvas.json`) wurden wieder entfernt
+- Erledigt: Artifact „Untitled“ (26.10.) gelöscht
+- Offen: Bilder lassen sich nicht ins Claude-Projekt legen (nur Textdokumente); Verbleib der übrigen Artifacts
+
 ### 2026-10-28 · [T] Projektdokumente und Einladungs-Design im Repo
 - Komponente: Repo signclip/signclip, Hauptebene und neuer Ordner `Einladung/`
 - Geändert: `ARCHITECTURE.md` vereint (Startweg mit eigener Nextcloud, Speicherrollen, Phasen aus `architektur.md` v2.2; Datenmodelle, Module, Bauplan aus der früheren Fassung; Begriffe Spur, Line, Context als vorläufig bis zum Kontext- und Verbindungsmodell)

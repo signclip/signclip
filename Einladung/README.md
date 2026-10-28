@@ -1,27 +1,18 @@
 # #Sign – Einladungs-Karussell (Instagram)
 
-Stand: 27.10.2026 (Beschreibung), exportiert am 28.10.2026 · Format: 3 Folien, 1080 × 1350 px · Sprache der Folien: Englisch · Look: Sticker/Doodle, warme Pastellfarben (Gelb, Grün, Orange, Türkis, Rötlich, Beige, Braun, Grau, Weiß)
+Stand: 27.10.2026 (Beschreibung), Bilder eingefügt am 28.10.2026 · Format: 3 Folien, 4:5 (Canvas 1080 × 1350 px, Export 2160 × 2700 px) · Sprache der Folien: Englisch · Look: Sticker/Doodle, warme Pastellfarben (Gelb, Grün, Orange, Türkis, Rötlich, Beige, Braun, Grau, Weiß)
 
 **Design-Canvas (Claude Design):** https://claude.ai/artifact/E2KKmSXgaECBvhQoFAjKz1 (privat, bis über „Share“ freigegeben). Jede Folie lässt sich dort als Bild exportieren.
 
-## Dateien in diesem Ordner
+## Folien (Bilder, 2160 × 2700 px)
 
-Der Canvas hat zwei Varianten mit je drei Folien. Die Quelldateien sind hier unverändert abgelegt.
+| Datei | Folie |
+| --- | --- |
+| [folie-1-wanna-play.png](folie-1-wanna-play.png) | 1 · Wanna play? |
+| [folie-2-core-capture.png](folie-2-core-capture.png) | 2 · Core Capture |
+| [folie-3-where-it-grows.png](folie-3-where-it-grows.png) | 3 · Where it grows (Roadmap) |
 
-| Datei | Folie | Variante |
-| --- | --- | --- |
-| `Main.dc.html` | 1 · Zusammen basteln („Wanna play?“, Szene am Tisch) | 1 |
-| `S2-Feld.dc.html` | 2 · Capture & Search | 1 |
-| `S3-Uebersicht.dc.html` | 3 · Übersicht | 1 |
-| `V2-S1.dc.html` | 1 · Wanna play? | 2 (übersichtlich) |
-| `V2-S2.dc.html` | 2 · Core | 2 |
-| `V2-S3.dc.html` | 3 · Where it grows | 2 |
-| `canvas.json` | Lage der Folien und Titel im Canvas | – |
-
-Hinweise:
-- Die Dateien sind Quelltext für den Design-Canvas (`.dc.html`) und brauchen dessen Laufzeit (`support.js`, nicht im Repo). Sie lassen sich nicht allein im Browser öffnen. Zum Ansehen und für Bildexporte dient der Canvas-Link oben.
-- Die Schriften (Space Grotesk, Inter, Shantell Sans) werden von Google Fonts geladen.
-- Die Beschreibung unten stammt aus dem Projektdokument `claude/einladung-karussell.md` und beschreibt Variante 2.
+Die Bilder sind der Export aus dem Design-Canvas (Variante 2). Die Quelldateien liegen nicht im Repo, nur im Canvas (Link oben). Die Beschreibung unten stammt aus dem Projektdokument `claude/einladung-karussell.md`.
 
 ## Folie 1 – Wanna play?
 - Icon-Reihe (Film, Buch, Karten, Research) mit Pfeil zur App

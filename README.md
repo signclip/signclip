@@ -19,7 +19,7 @@ Multimodales Erfassen, Finden und Teilen, zuerst für eine persönliche Gebärde
 | [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | Speicherbedarf und Kosten, Speicherklassen, Modelle, Sichtung, Teilnahme, Entscheidungen |
 | [RESEARCH.md](RESEARCH.md) | Recherche zu SL2T, DGS-Projekten, Datensätzen, Mustern aus anderen Bereichen; Lehren aus der ersten Version |
 | [VERLAUF.md](VERLAUF.md) | Projektverlauf (gleich wie im Claude-Projekt) |
-| [Einladung/](Einladung/README.md) | Instagram-Karussell zur Einladung: Quelldateien des Design-Canvas und Beschreibung |
+| [Einladung/](Einladung/README.md) | Instagram-Karussell zur Einladung: drei Folienbilder und Beschreibung |
 | [NEXTCLOUD-TEST.md](NEXTCLOUD-TEST.md) | Vorübergehend: Anleitung zur Nextcloud-Test-App im Hauptordner |
 
 ## Bausteine (geprüft, für die endgültige Version)
