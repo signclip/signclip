@@ -148,7 +148,7 @@
 
     <h3>4a · Nextcloud-Ordner in Sciebo sichtbar machen</h3>
     <label>Deine Sciebo-ID (Sciebo → Einstellungen → Teilen)</label>
-    <input type="text" id="sFed" placeholder="name@uni-koeln.de@uni-koeln.sciebo.de" autocapitalize="off" spellcheck="false">
+    <input type="text" id="sFed" placeholder="name@uni-koeln.de@uni-koeln.sciebo.de (mehrere mit Komma)" autocapitalize="off" spellcheck="false">
     <label>Welcher Ordner?</label>
     <select id="sFolder"><option>SignTest</option></select>
     <button id="bShare">Teilen</button>
@@ -704,7 +704,7 @@ $("#sFed").onchange = () => store.set("scieboId", $("#sFed").value.trim());
 $("#sFolder").onchange = () => store.set("shareFolder", $("#sFolder").value);
 // Link „Sciebo öffnen“ ist ein echter Link: Der Browser öffnet ihn beim Tippen zuverlässig (kein Pop-up-Blocker).
 function updateScieboLink() {
-  const t = parseCloudId($("#sFed").value.trim()), a = $("#aSciebo");
+  const t = parseCloudId($("#sFed").value.trim().split(/[\s,;]+/)[0] || ""), a = $("#aSciebo"); // bei mehreren IDs: Server der ersten
   if (t) { a.href = `https://${t.server}/apps/files/pendingshares`; a.setAttribute("aria-disabled", "false"); } // Ansicht „Ausstehende Freigaben“
   else { a.href = "#"; a.setAttribute("aria-disabled", "true"); }
 }
@@ -712,22 +712,30 @@ $("#sFed").oninput = updateScieboLink;
 $("#bShare").onclick = async () => {
   const msg = $("#shareMsg"); msg.className = "mut"; msg.textContent = "";
   if (!acc) { msg.className = "err"; msg.textContent = "Erst anmelden (Abschnitt 1)."; return; }
-  const fed = $("#sFed").value.trim(), folder = $("#sFolder").value;
-  if (!parseCloudId(fed)) { msg.className = "err"; msg.textContent = "Sciebo-ID im Format name@uni-koeln.de@uni-koeln.sciebo.de eintragen."; return; }
-  store.set("scieboId", fed);
-  $("#bShare").disabled = true; msg.textContent = "Wird geteilt …";
-  try {
-    const r = await shareFolderToCloudId({ server: acc.server, user: acc.user, appPassword: acc.pw, folder, cloudId: fed });
-    msg.className = "ok";
-    msg.textContent = r.already
-      ? `„${folder}“ war schon an ${fed} freigegeben. In Sciebo nachsehen; falls noch nicht angenommen: „Sciebo öffnen zum Annehmen“ → Glocke → annehmen.`
-      : `„${folder}“ ist an ${fed} freigegeben. Jetzt „Sciebo öffnen zum Annehmen“ → anmelden → Glocke → annehmen.`;
-    log(`„${folder}“ an ${fed} freigegeben${r.id != null ? " (ID " + r.id + ")" : ""}.`, "ok");
-    await loadShares(); drawTree();
-  } catch (e) {
-    msg.className = "err"; msg.textContent = "Teilen: " + e.message;
-    log("Teilen: " + e.message, "err");
-  } finally { $("#bShare").disabled = false; }
+  // Mehrere IDs möglich: durch Komma, Leerzeichen oder neue Zeile getrennt. Ein „@“ vorne wird ignoriert.
+  const raw = $("#sFed").value.trim(), folder = $("#sFolder").value;
+  const ids = raw.split(/[\s,;]+/).filter(Boolean);
+  const bad = ids.filter(i => !parseCloudId(i));
+  if (!ids.length || bad.length) { msg.className = "err"; msg.textContent = `Sciebo-ID im Format name@uni-koeln.de@uni-koeln.sciebo.de eintragen${bad.length ? " – ungültig: " + bad.join(", ") : ""}.`; return; }
+  store.set("scieboId", raw);
+  $("#bShare").disabled = true;
+  const lines = [];
+  for (const fed of ids) {
+    msg.textContent = `Wird an ${fed} geteilt … (kann einige Sekunden dauern)`;
+    try {
+      const r = await shareFolderToCloudId({ server: acc.server, user: acc.user, appPassword: acc.pw, folder, cloudId: fed });
+      lines.push({ ok: true, t: r.already ? `${fed}: war schon freigegeben` : `${fed}: freigegeben` });
+      log(`„${folder}“ an ${fed} ${r.already ? "war schon freigegeben" : "freigegeben"}${r.id != null ? " (ID " + r.id + ")" : ""}.`, "ok");
+    } catch (e) {
+      lines.push({ ok: false, t: `${fed}: ${e.message}` });
+      log(`Teilen an ${fed}: ${e.message}`, "err");
+    }
+  }
+  const allOk = lines.every(l => l.ok);
+  msg.className = allOk ? "ok" : "err";
+  msg.textContent = `„${folder}“ – ` + lines.map(l => l.t).join(" · ") + (allOk ? ". In Sciebo: „Sciebo öffnen zum Annehmen“ → Glocke → annehmen." : "");
+  try { await loadShares(); drawTree(); } catch {}
+  $("#bShare").disabled = false;
 };
 
 // ───────────────────────── 4b. Sciebo-Ordner in die Nextcloud holen ─────────────────────────

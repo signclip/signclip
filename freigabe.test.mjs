@@ -1,7 +1,7 @@
 // Tests als ausführbare Erklärung. Ausführen: node --test freigabe.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseCloudId, shareFolderToCloudId, PERMISSION } from "./freigabe.js";
+import { parseCloudId, normCloudId, shareFolderToCloudId, PERMISSION } from "./freigabe.js";
 
 test("Cloud-ID mit zwei @: Benutzer ist alles vor dem letzten @", () => {
   assert.deepEqual(parseCloudId("name@uni-koeln.de@uni-koeln.sciebo.de"), { user: "name@uni-koeln.de", server: "uni-koeln.sciebo.de" });
@@ -87,4 +87,23 @@ test("Keine lesbare Antwort beim Anlegen, aber Freigabe existiert danach → Erf
   };
   const r = await shareFolderToCloudId({ server: "https://nc.example.de", user: "me", appPassword: "pw", folder: "S", cloudId: "a@b.de", fetchImpl: f });
   assert.equal(r.id, 9);
+});
+
+test("„@“ vorne, https:// und Groß-/Kleinschreibung stören nicht", () => {
+  assert.deepEqual(parseCloudId("@name@uni-koeln.de@uni-koeln.sciebo.de"), { user: "name@uni-koeln.de", server: "uni-koeln.sciebo.de" });
+  assert.equal(normCloudId("Name@uni-koeln.de@https://uni-koeln.sciebo.de/"), "name@uni-koeln.de@uni-koeln.sciebo.de");
+});
+
+test("Zweite Sciebo-ID für denselben Ordner: bestehende Freigabe an eine andere ID stört nicht, gespeichert mit https:// wird erkannt", async () => {
+  let gets = 0, posts = 0;
+  const f = async (url, opts) => {
+    if (opts.method === "GET") { gets++; return { ok: true, status: 200, json: async () => ({ ocs: { meta: { status: "ok" }, data: [
+      { id: 1, share_type: 6, share_with: "erste@uni-koeln.sciebo.de" },
+      ...(gets > 1 ? [{ id: 2, share_type: 6, share_with: "zweite@uni-koeln.de@https://uni-koeln.sciebo.de" }] : []),
+    ] } }) }; }
+    posts++; throw new TypeError("Failed to fetch");
+  };
+  const r = await shareFolderToCloudId({ server: "https://nc.example.de", user: "me", appPassword: "pw", folder: "S", cloudId: "@zweite@uni-koeln.de@uni-koeln.sciebo.de", fetchImpl: f });
+  assert.equal(posts, 1);
+  assert.equal(r.id, 2);
 });

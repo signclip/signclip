@@ -30,12 +30,19 @@ const ENDPOINT = {
  * @returns {{ user: string, server: string } | null}
  */
 export function parseCloudId(cloudId) {
-  const id = String(cloudId || "").trim();
+  // Ein „@“ vorne ist nur Anzeige (wie bei Erwähnungen) und gehört nicht zur ID.
+  const id = String(cloudId || "").trim().replace(/^@+/, "");
   const at = id.lastIndexOf("@");
   if (at <= 0 || at === id.length - 1) return null;
   const user = id.slice(0, at), server = id.slice(at + 1).replace(/^https?:\/\//, "").replace(/\/+$/, "");
   if (!/^[^\s/]+\.[^\s/]+$/.test(server) || /\s/.test(user)) return null;
   return { user, server };
+}
+
+/** Vergleichbare Form einer Cloud-ID: ohne „@“ vorne, ohne https://, ohne Schrägstrich am Ende, klein. */
+export function normCloudId(cloudId) {
+  const p = parseCloudId(cloudId);
+  return p ? `${p.user}@${p.server}`.toLowerCase() : String(cloudId || "").trim().toLowerCase();
 }
 
 /** Basic-Auth-Kopfzeile, UTF-8-sicher */
@@ -82,8 +89,9 @@ export async function listShares({ server, user, appPassword, folder, via = "web
 async function findExisting(opts, cloudId) {
   try {
     const list = await listShares(opts);
-    const want = cloudId.trim().toLowerCase();
-    return list.find(sh => Number(sh.share_type) === SHARE_TYPE.federated && String(sh.share_with || "").toLowerCase() === want) || null;
+    // Die Nextcloud speichert die ID manchmal anders als eingegeben (z. B. mit https://) – darum normiert vergleichen.
+    const want = normCloudId(cloudId);
+    return list.find(sh => Number(sh.share_type) === SHARE_TYPE.federated && normCloudId(sh.share_with) === want) || null;
   } catch { return null; } // Lesen nicht möglich → einfach weiter mit Anlegen
 }
 
@@ -92,7 +100,8 @@ export async function shareFolderToCloudId({
   permissions = PERMISSION.read, via = "webapppassword", fetchImpl = fetch,
 }) {
   if (!server || !user || !appPassword) throw new Error("Zugang zur eigenen Nextcloud fehlt.");
-  if (!parseCloudId(cloudId)) throw new Error("Cloud-ID ungültig. Format: name@server, z. B. name@uni-koeln.de@uni-koeln.sciebo.de");
+  if (parseCloudId(cloudId)) { const p = parseCloudId(cloudId); cloudId = `${p.user}@${p.server}`; }
+  else throw new Error("Cloud-ID ungültig. Format: name@server, z. B. name@uni-koeln.de@uni-koeln.sciebo.de");
   const path = "/" + String(folder || "").trim().replace(/^\/+|\/+$/g, "");
   if (path === "/") throw new Error("Ordner angeben.");
   if (!ENDPOINT[via]) throw new Error(`Unbekannter Weg: ${via}`);
@@ -121,10 +130,15 @@ export async function shareFolderToCloudId({
     });
   } catch {
     // Keine lesbare Antwort: vielleicht ist die Freigabe trotzdem entstanden (oder bestand schon) – nachsehen.
-    const after = await findExisting(listOpts, cloudId);
-    if (after) return { id: after.id ?? null, already: false, raw: after };
+    // Die Nextcloud meldet die Freigabe erst an den anderen Server und antwortet danach – das kann dauern.
+    // Darum mehrmals nachsehen, bevor es als Fehler gilt.
+    for (const wait of [0, 1500, 3000, 5000]) {
+      if (wait) await new Promise(r => setTimeout(r, wait));
+      const after = await findExisting(listOpts, cloudId);
+      if (after) return { id: after.id ?? null, already: false, raw: after };
+    }
     throw new Error(via === "webapppassword"
-      ? "Keine Antwort – im Browser meist CORS: WebAppPassword, Feld „Files sharing“, App-Adresse eintragen."
+      ? "Keine lesbare Antwort und die Freigabe ist in deiner Nextcloud nicht zu sehen. Steht sie in Sciebo trotzdem, hat die Nextcloud sie danach wieder entfernt (meist: Sciebo hat zu langsam geantwortet) – noch einmal teilen. Sonst: WebAppPassword, Feld „Files sharing“, App-Adresse prüfen."
       : "Keine Antwort – Netz oder Adresse prüfen.");
   }
   const raw = await res.json().catch(() => null);
