@@ -62,7 +62,7 @@
 <body>
 <main>
   <h1>Sign · Nextcloud-Test</h1>
-  <p class="mut" id="appVersion">Version 2026-10-30 c · Freigabe mit Bremse</p>
+  <p class="mut" id="appVersion">Version 2026-10-30 d · Meldungen nur mit Beobachtetem</p>
   <p class="mut" id="who">Nicht verbunden.</p>
 
   <!-- 1. ANMELDEN ------------------------------------------------------------------->
@@ -728,7 +728,7 @@ $("#bShare").onclick = async () => {
   for (const fed of ids) {
     const k = fed.replace(/^@+/, "").toLowerCase();
     if (last[k] && now - last[k] < 60000) {
-      lines.push({ ok: false, t: `${fed}: gerade erst geteilt – bitte ${Math.ceil((60000 - (now - last[k])) / 1000)} s warten. Zu viele Versuche kurz hintereinander können Sciebo dazu bringen, Freigaben eine Zeit lang abzulehnen.` });
+      lines.push({ ok: false, t: `${fed}: gerade erst geteilt – bitte ${Math.ceil((60000 - (now - last[k])) / 1000)} s warten (Bremse der App: höchstens einmal pro Minute an dieselbe ID).` });
       continue;
     }
     last[k] = now; store.set("shareTimes", JSON.stringify(last));

@@ -87,14 +87,17 @@ export async function listShares({ server, user, appPassword, folder, via = "web
 
 /** Gibt es für den Ordner schon eine föderierte Freigabe an diese Cloud-ID? */
 async function findExisting(opts, cloudId) {
+  return (await lookUp(opts, cloudId)).share;
+}
+/** Wie findExisting, sagt aber zusätzlich, ob die Liste überhaupt lesbar war (für eine ehrliche Fehlermeldung). */
+async function lookUp(opts, cloudId) {
   try {
     const list = await listShares(opts);
-    // Die Nextcloud speichert die ID manchmal anders als eingegeben (z. B. mit https://) – darum normiert vergleichen.
     const want = normCloudId(cloudId);
-    return list.find(sh => Number(sh.share_type) === SHARE_TYPE.federated && normCloudId(sh.share_with) === want) || null;
-  } catch { return null; } // Lesen nicht möglich → einfach weiter mit Anlegen
+    const share = list.find(sh => Number(sh.share_type) === SHARE_TYPE.federated && normCloudId(sh.share_with) === want) || null;
+    return { share, readable: true, count: list.filter(sh => Number(sh.share_type) === SHARE_TYPE.federated).length };
+  } catch (e) { return { share: null, readable: false, error: e.message }; }
 }
-
 export async function shareFolderToCloudId({
   server, user, appPassword, folder, cloudId,
   permissions = PERMISSION.read, via = "webapppassword", fetchImpl = fetch,
@@ -132,14 +135,20 @@ export async function shareFolderToCloudId({
     // Keine lesbare Antwort: vielleicht ist die Freigabe trotzdem entstanden (oder bestand schon) – nachsehen.
     // Die Nextcloud meldet die Freigabe erst an den anderen Server und antwortet danach – das kann dauern.
     // Darum mehrmals nachsehen, bevor es als Fehler gilt.
+    let seen = null;
     for (const wait of [0, 1500, 3000, 5000]) {
       if (wait) await new Promise(r => setTimeout(r, wait));
-      const after = await findExisting(listOpts, cloudId);
-      if (after) return { id: after.id ?? null, already: false, raw: after };
+      seen = await lookUp(listOpts, cloudId);
+      if (seen.share) return { id: seen.share.id ?? null, already: false, raw: seen.share };
     }
-    throw new Error(via === "webapppassword"
-      ? "Keine lesbare Antwort und die Freigabe ist in deiner Nextcloud nicht zu sehen. Steht sie in Sciebo trotzdem, hat die Nextcloud sie danach wieder entfernt (meist: Sciebo hat zu langsam geantwortet) – noch einmal teilen. Sonst: WebAppPassword, Feld „Files sharing“, App-Adresse prüfen."
-      : "Keine Antwort – Netz oder Adresse prüfen.");
+    // Nur beobachtete Tatsachen melden – den eigentlichen Grund kennt die App hier nicht.
+    throw new Error(
+      "Beobachtet: Anfrage zum Teilen an deine Nextcloud gesendet. Ihre Antwort war für die App nicht lesbar " +
+      "(der Browser gibt Antworten ohne CORS-Freigabe nicht weiter – Inhalt und Grund sind daher unbekannt). " +
+      (seen && seen.readable
+        ? `Danach 4-mal in 10 s die Freigabeliste von „${path}“ gelesen: keine Freigabe an ${cloudId} vorhanden.`
+        : `Danach war auch die Freigabeliste nicht lesbar${seen && seen.error ? " (" + seen.error + ")" : ""}.`) +
+      " Den Grund zeigt die Nextcloud selbst: beim Ordner unter Teilen oder unter Verwaltungseinstellungen → Protokollierung.");
   }
   const raw = await res.json().catch(() => null);
   const meta = raw && raw.ocs && raw.ocs.meta;
@@ -147,9 +156,11 @@ export async function shareFolderToCloudId({
     const msg = (meta && meta.message) || `${res.status} ${res.statusText || ""}`.trim();
     // Schon einmal an dieselbe ID freigegeben? Dann ist das Ziel erreicht – kein Fehler.
     if (/already shared|bereits geteilt|bereits freigegeben/i.test(msg)) return { id: null, already: true, raw };
-    if (res.status === 401) throw new Error("Anmeldung abgelehnt (401). Mit normalem Passwort lässt die Nextcloud diese Schnittstelle evtl. nicht zu – App-Passwort versuchen.");
-    if (res.status === 403 && !meta) throw new Error("Zugriff verweigert (403). Bei WebAppPassword das Feld „Files sharing“ prüfen oder App-Passwort versuchen.");
-    throw new Error(`Freigabe fehlgeschlagen: ${msg}`);
+    // Antwort der Nextcloud wörtlich weitergeben; Hinweise nur als möglicher Grund kennzeichnen.
+    const said = `Nextcloud antwortet (HTTP ${res.status}): ${msg}`;
+    if (res.status === 401) throw new Error(`${said}. Möglicher Grund: Anmeldung mit normalem Passwort an dieser Schnittstelle nicht erlaubt – App-Passwort versuchen.`);
+    if (res.status === 403 && !meta) throw new Error(`${said}. Möglicher Grund: WebAppPassword, Feld „Files sharing“.`);
+    throw new Error(said);
   }
   const data = raw && raw.ocs && raw.ocs.data;
   return { id: data && data.id != null ? data.id : null, already: false, raw };
